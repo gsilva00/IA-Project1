@@ -1,13 +1,12 @@
 import pygame
-from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT
+from game_logic.constants import WHITE, RED, BACKGROUND_COLOR
 
 def draw_menu(screen):
-    pygame.init()
     font = pygame.font.Font(None, 74)
-    title_text = font.render('Wood Block', True, (255, 255, 255))
+    title_text = font.render('Wood Block', True, WHITE)
     
-    play_text = font.render('Play', True, (255, 255, 255))
-    quit_text = font.render('Quit', True, (255, 255, 255))
+    play_text = font.render('Play', True, WHITE)
+    quit_text = font.render('Quit', True, WHITE)
 
     title_rect = title_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 4))
     play_rect = play_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
@@ -15,19 +14,19 @@ def draw_menu(screen):
 
     running = True
     while running:
-        screen.fill((0, 0, 0))
+        screen.fill(BACKGROUND_COLOR)
 
         mouse_pos = pygame.mouse.get_pos()
 
         if play_rect.collidepoint(mouse_pos):
-            play_text = font.render('Play', True, (255, 0, 0))
+            play_text = font.render('Play', True, RED)
         else:
-            play_text = font.render('Play', True, (255, 255, 255))
+            play_text = font.render('Play', True, WHITE)
 
         if quit_rect.collidepoint(mouse_pos):
-            quit_text = font.render('Quit', True, (255, 0, 0))
+            quit_text = font.render('Quit', True, RED)
         else:
-            quit_text = font.render('Quit', True, (255, 255, 255))
+            quit_text = font.render('Quit', True, WHITE)
 
         screen.blit(title_text, title_rect)
         screen.blit(play_text, play_rect)
@@ -39,10 +38,8 @@ def draw_menu(screen):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if play_rect.collidepoint(event.pos):
-                    print("Play button clicked")
-                    running = False
+                    return
                 elif quit_rect.collidepoint(event.pos):
-                    print("Quit button clicked")
                     pygame.quit()
                     exit()
 

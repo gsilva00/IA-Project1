@@ -1,10 +1,18 @@
 # Constants for the game:
 
 # Constant variables for screen size
-SCREEN_WIDTH, SCREEN_HEIGHT = 600, 800
+SCREEN_WIDTH, SCREEN_HEIGHT = 800, 700
 
-# Size of each cell in the grid
-CELL_SIZE = 40
+# Constant variables for the board
+CELL_SIZE = 50
+GRID_SIZE = 8
+
+# Colors
+BACKGROUND_COLOR = (30, 30, 30)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GRAY = (200, 200, 200)
+FILLED_COLOR = (100, 100, 255)
 
 '''
     Shapes for the pieces in the game:
