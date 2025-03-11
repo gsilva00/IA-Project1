@@ -27,7 +27,7 @@ def draw_game_over(screen, score):
     score_text = font.render(f'Score: {score}', True, WHITE)
     
     play_again_text = font.render('Play Again', True, WHITE)
-    menu_text = font.render('Menu', True, WHITE)
+    menu_text = font.render('Go Back', True, WHITE)
 
     game_over_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
     score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
@@ -67,13 +67,15 @@ def draw_game_over(screen, score):
 
     pygame.quit()
 
-def play(screen):
+def infinite(screen):
     clock = pygame.time.Clock()
 
     while True:
         board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
         shapes = generate_shapes()
+        shape_visible = [True] * len(shapes)  # List to track visibility of shapes
         selected_shape = None
+        selected_index = None
         score = 0
         grid_offset_y = 2
 
@@ -95,7 +97,8 @@ def play(screen):
                 px, py = mx // CELL_SIZE, (my // CELL_SIZE) - grid_offset_y
 
                 for i, shape in enumerate(shapes):
-                    draw_shape(screen, shape, (GRID_SIZE + 2, i * 5), WHITE)
+                    if shape_visible[i] and (selected_shape is None or i != selected_index):
+                        draw_shape(screen, shape, (GRID_SIZE + 2, i * 5), WHITE)
 
                 if selected_shape is not None:
                     draw_shape(screen, selected_shape, (px, py), WHITE, grid_offset_y)
@@ -109,8 +112,10 @@ def play(screen):
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         if selected_shape is None:
                             for i, shape in enumerate(shapes):
-                                if GRID_SIZE * CELL_SIZE <= mx <= SCREEN_WIDTH and i * 5 * CELL_SIZE <= my <= (i * 5 + 4) * CELL_SIZE:
+                                if shape_visible[i] and GRID_SIZE * CELL_SIZE <= mx <= SCREEN_WIDTH and i * 5 * CELL_SIZE <= my <= (i * 5 + 4) * CELL_SIZE:
                                     selected_shape = shape
+                                    selected_index = i
+                                    shape_visible[i] = False  # Mark the shape as not visible
                                     break
 
                     if event.type == pygame.MOUSEBUTTONUP:
@@ -119,12 +124,15 @@ def play(screen):
                                 place_piece(board, selected_shape, (px, py))
                                 lines_cleared = check_full_lines(board)
                                 score += lines_cleared
-                                shapes.remove(selected_shape)
-                                if not shapes:
+                                if all(not visible for visible in shape_visible):
                                     shapes = generate_shapes()
+                                    shape_visible = [True] * len(shapes)
                                 if no_more_valid_moves(board, shapes):
                                     game_over = True
+                            else:
+                                shape_visible[selected_index] = True  # Restore visibility if not placed
                             selected_shape = None
+                            selected_index = None
 
             pygame.display.flip()
             clock.tick(60)
