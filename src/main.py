@@ -11,7 +11,6 @@ def play_game(screen, game_controller):
         pygame.time.Clock().tick(60)
         pygame.display.flip()
 
-
 def main():
     pygame.init()
     screen = pygame.display.set_mode((800, 700))

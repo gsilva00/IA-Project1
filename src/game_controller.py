@@ -5,11 +5,24 @@ from game_logic.rules import generate_shapes, place_piece, check_full_lines, is_
 
 class GameController:
     def __init__(self, game_model):
-        self.state = 'menu'
-        self.model = game_model
+        self._state = 'menu'
+        self._model = game_model
 
-    def set_state(self, state):
-        self.state = state
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        self._state = value
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, value):
+        self._model = value
 
 
 def handle_menu_events(game_controller, play_rect, quit_rect):
@@ -19,7 +32,7 @@ def handle_menu_events(game_controller, play_rect, quit_rect):
             sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if play_rect.collidepoint(event.pos):
-                game_controller.set_state('play')
+                game_controller.state = 'play'
             elif quit_rect.collidepoint(event.pos):
                 pygame.quit()
                 sys.exit()
@@ -31,19 +44,14 @@ def handle_game_events(game_controller):
             sys.exit()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            print('mouse down')
             if game_controller.model.selected_shape is None:
                 mx, my = pygame.mouse.get_pos()
-                print(f"mx: {mx}, my: {my}")
                 for i, shape in enumerate(game_controller.model.shapes):
-                    print(f"i: {i}, shape: {shape}")
                     if GRID_SIZE * CELL_SIZE <= mx <= SCREEN_WIDTH and i * 5 * CELL_SIZE <= my <= (i * 5 + 4) * CELL_SIZE:
-                        print('shape selected')
                         game_controller.model.selected_shape = shape
                         break
 
         if event.type == pygame.MOUSEBUTTONUP:
-            print('mouse up')
             if game_controller.model.selected_shape is not None:
                 mx, my = pygame.mouse.get_pos()
                 px, py = mx // CELL_SIZE, (my // CELL_SIZE) - game_controller.model.grid_offset_y
@@ -55,7 +63,7 @@ def handle_game_events(game_controller):
                     if not game_controller.model.shapes:
                         game_controller.model.shapes = generate_shapes()
                     if no_more_valid_moves(game_controller.model.board, game_controller.model.shapes):
-                        game_controller.set_state('game_over')
+                        game_controller.state = 'game_over'
                 game_controller.model.selected_shape = None
 
 def handle_game_over_events(game_controller, play_again_rect, menu_rect):
@@ -66,6 +74,6 @@ def handle_game_over_events(game_controller, play_again_rect, menu_rect):
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if play_again_rect.collidepoint(event.pos):
                 game_controller.model.reset()
-                game_controller.set_state('play')
+                game_controller.state = 'play'
             elif menu_rect.collidepoint(event.pos):
-                game_controller.set_state('menu')
+                game_controller.state = 'menu'

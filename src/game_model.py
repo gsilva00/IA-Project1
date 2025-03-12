@@ -3,30 +3,55 @@ from game_logic.rules import generate_shapes
 
 class GameModel:
     def __init__(self):
-        self.board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
-        self.shapes = generate_shapes()
-        self.selected_shape = None
-        self.score = 0
-        self.grid_offset_y = 2
+        self._board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
+        self._shapes = generate_shapes()
+        self._selected_shape = None
+        self._score = 0
+        self._grid_offset_y = 2
 
     def reset(self):
-        self.board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
-        self.shapes = generate_shapes()
-        self.selected_shape = None
-        self.score = 0
-        self.grid_offset_y = 2
+        self._board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
+        self._shapes = generate_shapes()
+        self._selected_shape = None
+        self._score = 0
+        self._grid_offset_y = 2
 
-    # def set_board(self, board):
-    #     self.board = board
+    @property
+    def board(self):
+        return self._board
 
-    # def set_shapes(self, shapes):
-    #     self.shapes = shapes
+    @board.setter
+    def board(self, value):
+        self._board = value
 
-    # def set_selected_shape(self, selected_shape):
-    #     self.selected_shape = selected_shape
+    @property
+    def shapes(self):
+        return self._shapes
 
-    # def set_score(self, score):
-    #     self.score = score
+    @shapes.setter
+    def shapes(self, value):
+        self._shapes = value
 
-    # def set_grid_offset_y(self, grid_offset_y):
-    #     self.grid_offset_y = grid_offset_y
+    @property
+    def selected_shape(self):
+        return self._selected_shape
+
+    @selected_shape.setter
+    def selected_shape(self, value):
+        self._selected_shape = value
+
+    @property
+    def score(self):
+        return self._score
+
+    @score.setter
+    def score(self, value):
+        self._score = value
+
+    @property
+    def grid_offset_y(self):
+        return self._grid_offset_y
+
+    @grid_offset_y.setter
+    def grid_offset_y(self, value):
+        self._grid_offset_y = value
