@@ -1,54 +1,68 @@
 import pygame
-from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BACKGROUND_COLOR, WHITE, RED, GRAY, FILLED_COLOR
+import os
+from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BROWN, WHITE, ORANGE, GRAY, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE
 from game_logic.rules import generate_shapes, place_piece, check_full_lines, is_valid_position, no_more_valid_moves
 
-def draw_board(screen, board, offset_y):
+#To Add Images
+wood_path = os.path.join(os.path.dirname(__file__), '../images', 'wood_shape.png')
+wood = pygame.image.load(wood_path)
+dark_wood_path = os.path.join(os.path.dirname(__file__), '../images', 'dark_wood_shape.png')
+wood_dark = pygame.image.load(dark_wood_path)
+light_wood_path = os.path.join(os.path.dirname(__file__), '../images', 'light_wood_shape.png')
+wood_light = pygame.image.load(light_wood_path)
+
+def draw_board(screen, board, offset_y, offset_x):
     for y in range(GRID_SIZE):
         for x in range(GRID_SIZE):
-            rect = pygame.Rect(x * CELL_SIZE, (y + offset_y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            rect = pygame.Rect(offset_x + x * CELL_SIZE, (y + offset_y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
             if board[y][x]:
-                pygame.draw.rect(screen, FILLED_COLOR, rect)
+                screen.blit(wood_dark, (offset_x + x * CELL_SIZE, (y + offset_y) * CELL_SIZE))
             pygame.draw.rect(screen, GRAY, rect, 1)
 
-def draw_shape(screen, shape, position, color, offset_y=0):
+def draw_shape(screen, shape, position, is_selected, offset_y=0):
     px, py = position
     for x, y in shape:
         rect = pygame.Rect((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-        pygame.draw.rect(screen, color, rect)
+        if is_selected:
+            screen.blit(wood_light, ((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE))
+        else:
+            screen.blit(wood, ((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE))
+        pygame.draw.rect(screen, GRAY, rect,1)
 
 def draw_score(screen, score):
-    font = pygame.font.Font(None, 36)
+    font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
     text = font.render(f"Score: {score}", True, WHITE)
     screen.blit(text, (10, 10))
 
 def draw_game_over(screen, score):
-    font = pygame.font.Font(None, 74)
+    font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
     game_over_text = font.render('Game Over', True, WHITE)
-    score_text = font.render(f'Score: {score}', True, WHITE)
+    font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+    score_text = font.render(f'Score: {score}', True, ORANGE)
     
     play_again_text = font.render('Play Again', True, WHITE)
     menu_text = font.render('Menu', True, WHITE)
 
     game_over_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
-    score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-    play_again_rect = play_again_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.5))
-    menu_rect = menu_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.2))
+    score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2.5))
+    play_again_rect = play_again_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.7))
+    menu_rect = menu_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.4))
 
     running = True
     while running:
-        screen.fill(BACKGROUND_COLOR)
+        screen.fill(BROWN)
 
         mouse_pos = pygame.mouse.get_pos()
 
         if play_again_rect.collidepoint(mouse_pos):
-            play_again_text = font.render('Play Again', True, RED)
+            play_again_text = font.render('Play Again', True, ORANGE)
         else:
             play_again_text = font.render('Play Again', True, WHITE)
 
         if menu_rect.collidepoint(mouse_pos):
-            menu_text = font.render('Go Back', True, RED)
+            menu_text = font.render('Menu', True, ORANGE)
         else:
-            menu_text = font.render('Go Back', True, WHITE)
+            menu_text = font.render('Menu', True, WHITE)
 
         screen.blit(game_over_text, game_over_rect)
         screen.blit(score_text, score_rect)
@@ -70,17 +84,25 @@ def draw_game_over(screen, score):
 def play(screen):
     clock = pygame.time.Clock()
 
+    #Add Background Image To menu
+    background_path = os.path.join(os.path.dirname(__file__), '../images', 'background_game.png')
+    background = pygame.image.load(background_path)
+
     while True:
         board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
         shapes = generate_shapes()
         selected_shape = None
         score = 0
-        grid_offset_y = 2
+        grid_offset_y = 1
+        board_width = GRID_SIZE * CELL_SIZE
+        grid_offset_x = (SCREEN_WIDTH - board_width) // 2
+
 
         running = True
         game_over = False
         while running:
-            screen.fill(BACKGROUND_COLOR)
+            screen.blit(background, (0, 0))
+            #screen.fill(BACKGROUND_COLOR)
 
             if game_over:
                 action = draw_game_over(screen, score)
@@ -89,16 +111,16 @@ def play(screen):
                 elif action == 'menu':
                     return 'menu'
             else:
-                draw_board(screen, board, grid_offset_y)
+                draw_board(screen, board, grid_offset_y, grid_offset_x)
 
                 mx, my = pygame.mouse.get_pos()
-                px, py = mx // CELL_SIZE, (my // CELL_SIZE) - grid_offset_y
+                px, py = (mx // CELL_SIZE) , (my // CELL_SIZE) - grid_offset_y
 
                 for i, shape in enumerate(shapes):
-                    draw_shape(screen, shape, (GRID_SIZE + 2, i * 5), WHITE)
+                    draw_shape(screen, shape, (i * 5 + 2, 10), False)
 
                 if selected_shape is not None:
-                    draw_shape(screen, selected_shape, (px, py), WHITE, grid_offset_y)
+                    draw_shape(screen, selected_shape, (px, py), True, grid_offset_y)
 
                 draw_score(screen, score)
 
@@ -109,14 +131,18 @@ def play(screen):
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         if selected_shape is None:
                             for i, shape in enumerate(shapes):
-                                if GRID_SIZE * CELL_SIZE <= mx <= SCREEN_WIDTH and i * 5 * CELL_SIZE <= my <= (i * 5 + 4) * CELL_SIZE:
+                                shape_x_start = (i * 5 + 2) * CELL_SIZE
+                                shape_x_end = shape_x_start + 4 * CELL_SIZE
+                                shape_y_start = 10 * CELL_SIZE
+                                shape_y_end = shape_y_start + 4 * CELL_SIZE
+                                if shape_x_start <= mx <= shape_x_end and shape_y_start <= my <= shape_y_end:
                                     selected_shape = shape
                                     break
 
                     if event.type == pygame.MOUSEBUTTONUP:
                         if selected_shape is not None:
-                            if is_valid_position(board, selected_shape, (px, py)):
-                                place_piece(board, selected_shape, (px, py))
+                            if is_valid_position(board, selected_shape, (px-4, py)):
+                                place_piece(board, selected_shape, (px-4, py))
                                 lines_cleared = check_full_lines(board)
                                 score += lines_cleared
                                 shapes.remove(selected_shape)
