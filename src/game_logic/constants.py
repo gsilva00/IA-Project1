@@ -1,5 +1,6 @@
 import os
 
+
 # Constants for the game:
 
 # For screen size
@@ -18,14 +19,26 @@ RED = (255, 0, 0)
 GRAY = (220, 210, 200)
 FILLED_COLOR = (100, 100, 255)
 
+# Paths
+_BASE_PATH = os.path.join(os.path.dirname(__file__), '../../')
+_SRC_PATH = os.path.join(_BASE_PATH, 'src')
+_ASSETS_PATH = os.path.join(_BASE_PATH, 'assets')
+_FONT_PATH = os.path.join(_ASSETS_PATH, 'fonts')
+_IMAGES_PATH = os.path.join(_ASSETS_PATH, 'images')
+
 # Font
-FONT_PATH = os.path.join(os.path.dirname(__file__), '../images', 'YangBagus-DYMX9.ttf')
+FONT_PATH = os.path.join(_FONT_PATH, 'YangBagus-DYMX9.ttf')
 FONT_TITLE_SIZE = 74
 FONT_TEXT_SIZE = 64
 FONT_TEXT_SMALL_SIZE = 36
 
 # Images
-BACKGROUND_MENU_IMAGE = os.path.join(os.path.dirname(__file__), '../images', 'background3.png')
+GAME_ICON_PATH = os.path.join(_IMAGES_PATH, 'game_icon.png')
+BACKGROUND_MENU_PATH = os.path.join(_IMAGES_PATH, 'background_menu.png')
+BACKGROUND_GAME_PATH = os.path.join(_IMAGES_PATH, 'background_game.png')
+WOOD_PATH = os.path.join(_IMAGES_PATH, 'wood_square.png')
+LIGHT_WOOD_PATH = os.path.join(_IMAGES_PATH, 'light_wood_square.png')
+DARK_WOOD_PATH = os.path.join(_IMAGES_PATH, 'dark_wood_square.png')
 
 '''
     Shapes for the pieces in the game:

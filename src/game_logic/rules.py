@@ -1,6 +1,7 @@
 import random
 from game_logic.constants import GRID_SIZE, PIECES
 
+
 def generate_shapes():
     return [random.choice(PIECES) for _ in range(3)]
 

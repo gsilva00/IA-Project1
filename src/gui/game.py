@@ -1,16 +1,10 @@
 import pygame
-import os
-from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BROWN, WHITE, ORANGE, GRAY, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, BACKGROUND_COLOR
+from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BROWN, WHITE, ORANGE, GRAY, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SMALL_SIZE, BACKGROUND_GAME_PATH, WOOD_PATH, LIGHT_WOOD_PATH, DARK_WOOD_PATH
 
-# Images and sprites
-wood_path = os.path.join(os.path.dirname(__file__), '../images', 'wood_shape.png')
-wood = pygame.image.load(wood_path)
-dark_wood_path = os.path.join(os.path.dirname(__file__), '../images', 'dark_wood_shape.png')
-wood_dark = pygame.image.load(dark_wood_path)
-light_wood_path = os.path.join(os.path.dirname(__file__), '../images', 'light_wood_shape.png')
-wood_light = pygame.image.load(light_wood_path)
 
 def draw_board(screen, board, offset_y, offset_x):
+    wood_dark = pygame.image.load(DARK_WOOD_PATH)
+
     for y in range(GRID_SIZE):
         for x in range(GRID_SIZE):
             rect = pygame.Rect(offset_x + x * CELL_SIZE, (y + offset_y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
@@ -19,6 +13,9 @@ def draw_board(screen, board, offset_y, offset_x):
             pygame.draw.rect(screen, GRAY, rect, 1)
 
 def draw_shape(screen, shape, position, is_selected, offset_y=0):
+    wood = pygame.image.load(WOOD_PATH)
+    wood_light = pygame.image.load(LIGHT_WOOD_PATH)
+
     px, py = position
     for x, y in shape:
         rect = pygame.Rect((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
@@ -68,8 +65,7 @@ def draw_game_over(screen, score):
     return play_again_rect, menu_rect
 
 def draw_game(screen, game_model):
-    background_path = os.path.join(os.path.dirname(__file__), '../images', 'background_game.png')
-    background = pygame.image.load(background_path)
+    background = pygame.image.load(BACKGROUND_GAME_PATH)
 
     screen.blit(background, (0, 0))
 

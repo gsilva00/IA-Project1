@@ -1,5 +1,6 @@
 import pygame
-from game_logic.constants import WHITE, BROWN, ORANGE, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SIZE, BACKGROUND_MENU_IMAGE
+from game_logic.constants import WHITE, BROWN, ORANGE, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SIZE, BACKGROUND_MENU_PATH
+
 
 def draw_menu(screen):
     font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
@@ -16,7 +17,7 @@ def draw_menu(screen):
     play_rect = play_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
     quit_rect = quit_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.5))
 
-    background = pygame.image.load(BACKGROUND_MENU_IMAGE)
+    background = pygame.image.load(BACKGROUND_MENU_PATH)
     screen.blit(background, (0, 0))
 
     mouse_pos = pygame.mouse.get_pos()

@@ -1,7 +1,8 @@
 import sys
 import pygame
-from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, CELL_SIZE, GRID_SIZE
+from game_logic.constants import CELL_SIZE
 from game_logic.rules import generate_shapes, place_piece, check_full_lines, is_valid_position, no_more_valid_moves
+
 
 class GameController:
     def __init__(self, game_model):

@@ -1,6 +1,7 @@
 from game_logic.constants import SCREEN_WIDTH, GRID_SIZE, CELL_SIZE
 from game_logic.rules import generate_shapes
 
+
 class GameModel:
     def __init__(self):
         self._board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]

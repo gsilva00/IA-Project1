@@ -1,11 +1,10 @@
 import pygame
-import os
+from game_model import GameModel
 from gui.menu import draw_menu
 from gui.game import draw_game, draw_game_over
 from game_controller import GameController, handle_menu_events, handle_game_events, handle_game_over_events
-from game_model import GameModel
+from game_logic.constants import GAME_ICON_PATH
 
-icon_path = os.path.join(os.path.dirname(__file__), 'images', 'game_icon.png')
 
 def play_game(screen, game_controller):
     while game_controller.state == 'play':
@@ -18,7 +17,7 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((800, 700))
     pygame.display.set_caption("Wood Block")
-    icon = pygame.image.load(icon_path)
+    icon = pygame.image.load(GAME_ICON_PATH)
     pygame.display.set_icon(icon)
 
     game_model = GameModel()
