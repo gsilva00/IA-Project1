@@ -10,6 +10,7 @@ class GameModel:
         self._selected_shape = None
         self._selected_index = None
         self._score = 0
+        self._blocks_to_break = 0
 
     def reset(self):
         self._board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
@@ -18,6 +19,7 @@ class GameModel:
         self._selected_shape = None
         self._selected_index = None
         self._score = 0
+        self._blocks_to_break = 0
 
     @property
     def board(self):
@@ -66,3 +68,11 @@ class GameModel:
     @score.setter
     def score(self, value):
         self._score = value
+
+    @property
+    def blocks_to_break(self):
+        return self._blocks_to_break
+    
+    @blocks_to_break.setter
+    def blocks_to_break(self, value):
+        self._blocks_to_break = value

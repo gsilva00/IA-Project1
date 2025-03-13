@@ -26,17 +26,37 @@ class GameController:
         self._model = value
 
 
-def handle_menu_events(game_controller, play_rect, quit_rect):
+def handle_menu_events(game_controller, levels_rect, infinite_rect, quit_rect):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            if play_rect.collidepoint(event.pos):
-                game_controller.state = 'play'
+            if levels_rect.collidepoint(event.pos):
+                game_controller.state = 'select_level'
+            elif infinite_rect.collidepoint(event.pos):
+                game_controller.state = 'infinite'
             elif quit_rect.collidepoint(event.pos):
                 pygame.quit()
                 sys.exit()
+
+def handle_select_level_events(game_controller, level_1_rect, level_2_rect, level_3_rect, menu_rect):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if level_1_rect.collidepoint(event.pos):
+                game_controller.model.level = 1
+                game_controller.state = 'level_1'
+            elif level_2_rect.collidepoint(event.pos):
+                game_controller.model.level = 2
+                game_controller.state = 'level_2'
+            elif level_3_rect.collidepoint(event.pos):
+                game_controller.model.level = 3
+                game_controller.state = 'level_3'
+            elif menu_rect.collidepoint(event.pos):
+                game_controller.state = 'menu'
 
 def handle_game_events(game_controller):
     for event in pygame.event.get():
@@ -64,8 +84,17 @@ def handle_game_events(game_controller):
                 px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
                 if is_valid_position(game_controller.model.board, game_controller.model.selected_shape, (px-4, py)):
                     place_piece(game_controller.model.board, game_controller.model.selected_shape, (px-4, py))
-                    lines_cleared = check_full_lines(game_controller.model.board)
-                    game_controller.model.score += lines_cleared
+                    lines_cleared, target_blocks_cleared = check_full_lines(game_controller.model.board)
+
+                    if game_controller.state != 'infinite':
+                        game_controller.model.blocks_to_break -= target_blocks_cleared
+                        game_controller.model.score += target_blocks_cleared
+
+                        if game_controller.model.blocks_to_break <= 0:
+                            game_controller.state = 'game_over'
+
+                    else:
+                        game_controller.model.score += lines_cleared
 
                     if all(not visible for visible in game_controller.model.shapes_visible):
                         game_controller.model.shapes = generate_shapes()
@@ -87,6 +116,7 @@ def handle_game_over_events(game_controller, play_again_rect, menu_rect):
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if play_again_rect.collidepoint(event.pos):
                 game_controller.model.reset()
-                game_controller.state = 'play'
+                game_controller.state = 'infinite'
             elif menu_rect.collidepoint(event.pos):
+                game_controller.model.reset()
                 game_controller.state = 'menu'

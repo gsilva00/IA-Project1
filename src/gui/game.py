@@ -1,15 +1,18 @@
 import pygame
-from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BROWN, WHITE, ORANGE, GRAY, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SMALL_SIZE, BACKGROUND_GAME_PATH, WOOD_PATH, LIGHT_WOOD_PATH, DARK_WOOD_PATH, GRID_OFFSET_X, GRID_OFFSET_Y
+from game_logic.constants import *
 
 
 def draw_board(screen, board):
     wood_dark = pygame.image.load(DARK_WOOD_PATH)
+    wood_target = pygame.image.load(WOOD_PATH)
 
     for y in range(GRID_SIZE):
         for x in range(GRID_SIZE):
             rect = pygame.Rect(GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-            if board[y][x]:
+            if board[y][x] == 1:
                 screen.blit(wood_dark, (GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE))
+            elif board[y][x] == 2:
+                screen.blit(wood_target, (GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE))
             pygame.draw.rect(screen, GRAY, rect, 1)
 
 def draw_shape(screen, shape, position, is_selected, offset_y=0):
@@ -52,9 +55,9 @@ def draw_game_over(screen, score):
         play_again_text = font.render('Play Again', True, WHITE)
 
     if menu_rect.collidepoint(mouse_pos):
-        menu_text = font.render('Menu', True, ORANGE)
+        menu_text = font.render('Go Back', True, ORANGE)
     else:
-        menu_text = font.render('Menu', True, WHITE)
+        menu_text = font.render('Go Back', True, WHITE)
 
     screen.blit(game_over_text, game_over_rect)
     screen.blit(score_text, score_rect)
@@ -64,7 +67,7 @@ def draw_game_over(screen, score):
 
     return play_again_rect, menu_rect
 
-def draw_game(screen, game_model):
+def draw_game(screen, game_model, level_number=0):
     background = pygame.image.load(BACKGROUND_GAME_PATH)
 
     screen.blit(background, (0, 0))
