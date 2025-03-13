@@ -63,7 +63,8 @@ def draw_game(screen, game_model):
     px, py = mx // CELL_SIZE, (my // CELL_SIZE) - game_model.grid_offset_y
 
     for i, shape in enumerate(game_model.shapes):
-        draw_shape(screen, shape, (GRID_SIZE + 2, i * 5), WHITE)
+        if game_model.shapes_visible[i] and (game_model.selected_shape is None or i != game_model.selected_index):
+            draw_shape(screen, shape, (GRID_SIZE + 2, i * 5), WHITE)
 
     if game_model.selected_shape is not None:
         draw_shape(screen, game_model.selected_shape, (px, py), WHITE, game_model.grid_offset_y)

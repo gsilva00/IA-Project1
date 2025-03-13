@@ -49,6 +49,8 @@ def handle_game_events(game_controller):
                 for i, shape in enumerate(game_controller.model.shapes):
                     if GRID_SIZE * CELL_SIZE <= mx <= SCREEN_WIDTH and i * 5 * CELL_SIZE <= my <= (i * 5 + 4) * CELL_SIZE:
                         game_controller.model.selected_shape = shape
+                        game_controller.model.selected_index = i
+                        game_controller.model.shapes_visible[i] = False # Mark the shape as not visible
                         break
 
         if event.type == pygame.MOUSEBUTTONUP:
@@ -59,12 +61,18 @@ def handle_game_events(game_controller):
                     place_piece(game_controller.model.board, game_controller.model.selected_shape, (px, py))
                     lines_cleared = check_full_lines(game_controller.model.board)
                     game_controller.model.score += lines_cleared
-                    game_controller.model.shapes.remove(game_controller.model.selected_shape)
-                    if not game_controller.model.shapes:
+
+                    if all(not visible for visible in game_controller.model.shapes_visible):
                         game_controller.model.shapes = generate_shapes()
+                        game_controller.model.shapes_visible = [True] * len(game_controller.model.shapes)
+
                     if no_more_valid_moves(game_controller.model.board, game_controller.model.shapes):
                         game_controller.state = 'game_over'
+                else:
+                    game_controller.model.shapes_visible[game_controller.model.selected_index] = True # Restore visibility if not placed
+
                 game_controller.model.selected_shape = None
+                game_controller.model.selected_index = None
 
 def handle_game_over_events(game_controller, play_again_rect, menu_rect):
     for event in pygame.event.get():
