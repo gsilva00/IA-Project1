@@ -1,15 +1,15 @@
 import pygame
-from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BROWN, WHITE, ORANGE, GRAY, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SMALL_SIZE, BACKGROUND_GAME_PATH, WOOD_PATH, LIGHT_WOOD_PATH, DARK_WOOD_PATH
+from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BROWN, WHITE, ORANGE, GRAY, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SMALL_SIZE, BACKGROUND_GAME_PATH, WOOD_PATH, LIGHT_WOOD_PATH, DARK_WOOD_PATH, GRID_OFFSET_X, GRID_OFFSET_Y
 
 
-def draw_board(screen, board, offset_y, offset_x):
+def draw_board(screen, board):
     wood_dark = pygame.image.load(DARK_WOOD_PATH)
 
     for y in range(GRID_SIZE):
         for x in range(GRID_SIZE):
-            rect = pygame.Rect(offset_x + x * CELL_SIZE, (y + offset_y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            rect = pygame.Rect(GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
             if board[y][x]:
-                screen.blit(wood_dark, (offset_x + x * CELL_SIZE, (y + offset_y) * CELL_SIZE))
+                screen.blit(wood_dark, (GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE))
             pygame.draw.rect(screen, GRAY, rect, 1)
 
 def draw_shape(screen, shape, position, is_selected, offset_y=0):
@@ -69,15 +69,15 @@ def draw_game(screen, game_model):
 
     screen.blit(background, (0, 0))
 
-    draw_board(screen, game_model.board, game_model.grid_offset_y, game_model.grid_offset_x)
+    draw_board(screen, game_model.board, GRID_OFFSET_Y, GRID_OFFSET_X)
     mx, my = pygame.mouse.get_pos()
-    px, py = mx // CELL_SIZE, (my // CELL_SIZE) - game_model.grid_offset_y
+    px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
 
     for i, shape in enumerate(game_model.shapes):
         if game_model.shapes_visible[i] and (game_model.selected_shape is None or i != game_model.selected_index):
             draw_shape(screen, shape, (i*5+2, 10), False)
 
     if game_model.selected_shape is not None:
-        draw_shape(screen, game_model.selected_shape, (px, py), True, game_model.grid_offset_y)
+        draw_shape(screen, game_model.selected_shape, (px, py), True, GRID_OFFSET_Y)
 
     draw_score(screen, game_model.score)
