@@ -16,11 +16,10 @@ def draw_menu(screen):
     play_rect = play_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
     quit_rect = quit_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.5))
 
-    #Add Background Image To menu
     background = pygame.image.load(BACKGROUND_MENU_IMAGE)
+    screen.blit(background, (0, 0))
 
     mouse_pos = pygame.mouse.get_pos()
-
     if play_rect.collidepoint(mouse_pos):
         play_text = font.render('Play', True, WHITE)
     else:

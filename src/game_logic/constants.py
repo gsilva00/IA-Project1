@@ -1,11 +1,11 @@
-import os #To import from path
+import os
 
 # Constants for the game:
 
-# Constant variables for screen size
+# For screen size
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 700
 
-# Constant variables for the board
+# For the board
 CELL_SIZE = 50
 GRID_SIZE = 8
 
@@ -18,13 +18,13 @@ RED = (255, 0, 0)
 GRAY = (220, 210, 200)
 FILLED_COLOR = (100, 100, 255)
 
-#Font
+# Font
 FONT_PATH = os.path.join(os.path.dirname(__file__), '../images', 'YangBagus-DYMX9.ttf')
 FONT_TITLE_SIZE = 74
 FONT_TEXT_SIZE = 64
 FONT_TEXT_SMALL_SIZE = 36
 
-#Images
+# Images
 BACKGROUND_MENU_IMAGE = os.path.join(os.path.dirname(__file__), '../images', 'background3.png')
 
 '''

@@ -1,9 +1,8 @@
 import pygame
 import os
-from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BROWN, WHITE, ORANGE, GRAY, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE
-from game_logic.rules import generate_shapes, place_piece, check_full_lines, is_valid_position, no_more_valid_moves
+from game_logic.constants import SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE, CELL_SIZE, BROWN, WHITE, ORANGE, GRAY, FONT_PATH, FONT_TITLE_SIZE, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, BACKGROUND_COLOR
 
-#To Add Images
+# Images and sprites
 wood_path = os.path.join(os.path.dirname(__file__), '../images', 'wood_shape.png')
 wood = pygame.image.load(wood_path)
 dark_wood_path = os.path.join(os.path.dirname(__file__), '../images', 'dark_wood_shape.png')
@@ -39,7 +38,6 @@ def draw_game_over(screen, score):
     game_over_text = font.render('Game Over', True, WHITE)
     font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
     score_text = font.render(f'Score: {score}', True, ORANGE)
-    
     play_again_text = font.render('Play Again', True, WHITE)
     menu_text = font.render('Menu', True, WHITE)
 
@@ -51,7 +49,6 @@ def draw_game_over(screen, score):
     screen.fill(BROWN)
 
     mouse_pos = pygame.mouse.get_pos()
-
     if play_again_rect.collidepoint(mouse_pos):
         play_again_text = font.render('Play Again', True, ORANGE)
     else:
@@ -71,21 +68,20 @@ def draw_game_over(screen, score):
     return play_again_rect, menu_rect
 
 def draw_game(screen, game_model):
-    screen.fill(BACKGROUND_COLOR)
-    draw_board(screen, game_model.board, game_model.grid_offset_y)
-
-    mx, my = pygame.mouse.get_pos()
-    px, py = mx // CELL_SIZE, (my // CELL_SIZE) - game_model.grid_offset_y
-
-    #Add Background Image To menu
     background_path = os.path.join(os.path.dirname(__file__), '../images', 'background_game.png')
     background = pygame.image.load(background_path)
 
+    screen.blit(background, (0, 0))
+
+    draw_board(screen, game_model.board, game_model.grid_offset_y, game_model.grid_offset_x)
+    mx, my = pygame.mouse.get_pos()
+    px, py = mx // CELL_SIZE, (my // CELL_SIZE) - game_model.grid_offset_y
+
     for i, shape in enumerate(game_model.shapes):
         if game_model.shapes_visible[i] and (game_model.selected_shape is None or i != game_model.selected_index):
-            draw_shape(screen, shape, (GRID_SIZE + 2, i * 5), WHITE)
+            draw_shape(screen, shape, (i*5+2, 10), False)
 
     if game_model.selected_shape is not None:
-        draw_shape(screen, game_model.selected_shape, (px, py), WHITE, game_model.grid_offset_y)
+        draw_shape(screen, game_model.selected_shape, (px, py), True, game_model.grid_offset_y)
 
     draw_score(screen, game_model.score)

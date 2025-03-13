@@ -1,4 +1,4 @@
-from game_logic.constants import GRID_SIZE
+from game_logic.constants import SCREEN_WIDTH, GRID_SIZE, CELL_SIZE
 from game_logic.rules import generate_shapes
 
 class GameModel:
@@ -9,7 +9,8 @@ class GameModel:
         self._selected_shape = None
         self._selected_index = None
         self._score = 0
-        self._grid_offset_y = 2
+        self._grid_offset_x = (SCREEN_WIDTH - GRID_SIZE * CELL_SIZE) // 2
+        self._grid_offset_y = 1
 
     def reset(self):
         self._board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
@@ -18,7 +19,8 @@ class GameModel:
         self._selected_shape = None
         self._selected_index = None
         self._score = 0
-        self._grid_offset_y = 2
+        self._grid_offset_x = (SCREEN_WIDTH - GRID_SIZE * CELL_SIZE) // 2
+        self._grid_offset_y = 1
 
     @property
     def board(self):
@@ -67,6 +69,14 @@ class GameModel:
     @score.setter
     def score(self, value):
         self._score = value
+
+    @property
+    def grid_offset_x(self):
+        return self._grid_offset_x
+
+    @grid_offset_x.setter
+    def grid_offset_x(self, value):
+        self._grid_offset_x = value
 
     @property
     def grid_offset_y(self):

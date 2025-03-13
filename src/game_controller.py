@@ -47,7 +47,11 @@ def handle_game_events(game_controller):
             if game_controller.model.selected_shape is None:
                 mx, my = pygame.mouse.get_pos()
                 for i, shape in enumerate(game_controller.model.shapes):
-                    if GRID_SIZE * CELL_SIZE <= mx <= SCREEN_WIDTH and i * 5 * CELL_SIZE <= my <= (i * 5 + 4) * CELL_SIZE:
+                    shape_x_start = (i * 5 + 2) * CELL_SIZE
+                    shape_x_end = shape_x_start + 4 * CELL_SIZE
+                    shape_y_start = 10 * CELL_SIZE
+                    shape_y_end = shape_y_start + 4 * CELL_SIZE
+                    if shape_x_start <= mx <= shape_x_end and shape_y_start <= my <= shape_y_end:
                         game_controller.model.selected_shape = shape
                         game_controller.model.selected_index = i
                         game_controller.model.shapes_visible[i] = False # Mark the shape as not visible
@@ -57,8 +61,8 @@ def handle_game_events(game_controller):
             if game_controller.model.selected_shape is not None:
                 mx, my = pygame.mouse.get_pos()
                 px, py = mx // CELL_SIZE, (my // CELL_SIZE) - game_controller.model.grid_offset_y
-                if is_valid_position(game_controller.model.board, game_controller.model.selected_shape, (px, py)):
-                    place_piece(game_controller.model.board, game_controller.model.selected_shape, (px, py))
+                if is_valid_position(game_controller.model.board, game_controller.model.selected_shape, (px-4, py)):
+                    place_piece(game_controller.model.board, game_controller.model.selected_shape, (px-4, py))
                     lines_cleared = check_full_lines(game_controller.model.board)
                     game_controller.model.score += lines_cleared
 
