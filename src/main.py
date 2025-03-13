@@ -1,6 +1,5 @@
 import pygame
-from game_model import GameModel
-from game_controller import GameController, handle_menu_events, handle_game_events, handle_game_over_events
+import os
 from gui.menu import draw_menu
 from gui.game import draw_game, draw_game_over
 
@@ -14,7 +13,12 @@ def play_game(screen, game_controller):
 def main():
     pygame.init()
     screen = pygame.display.set_mode((800, 700))
-    pygame.display.set_caption('Infinite')
+    pygame.display.set_caption("Wood Block")
+    
+    #Add Icon
+    icon_path = os.path.join(os.path.dirname(__file__), 'images', 'game_icon.png')
+    icon = pygame.image.load(icon_path)
+    pygame.display.set_icon(icon)
 
     game_model = GameModel()
     game_controller = GameController(game_model)
