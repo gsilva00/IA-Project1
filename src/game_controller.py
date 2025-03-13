@@ -1,6 +1,6 @@
 import sys
 import pygame
-from game_logic.constants import CELL_SIZE
+from game_logic.constants import CELL_SIZE, GRID_OFFSET_Y
 from game_logic.rules import generate_shapes, place_piece, check_full_lines, is_valid_position, no_more_valid_moves
 
 
@@ -61,7 +61,7 @@ def handle_game_events(game_controller):
         if event.type == pygame.MOUSEBUTTONUP:
             if game_controller.model.selected_shape is not None:
                 mx, my = pygame.mouse.get_pos()
-                px, py = mx // CELL_SIZE, (my // CELL_SIZE) - game_controller.model.grid_offset_y
+                px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
                 if is_valid_position(game_controller.model.board, game_controller.model.selected_shape, (px-4, py)):
                     place_piece(game_controller.model.board, game_controller.model.selected_shape, (px-4, py))
                     lines_cleared = check_full_lines(game_controller.model.board)
@@ -71,7 +71,7 @@ def handle_game_events(game_controller):
                         game_controller.model.shapes = generate_shapes()
                         game_controller.model.shapes_visible = [True] * len(game_controller.model.shapes)
 
-                    if no_more_valid_moves(game_controller.model.board, game_controller.model.shapes):
+                    if no_more_valid_moves(game_controller.model.board, game_controller.model.shapes, game_controller.model.shapes_visible):
                         game_controller.state = 'game_over'
                 else:
                     game_controller.model.shapes_visible[game_controller.model.selected_index] = True # Restore visibility if not placed

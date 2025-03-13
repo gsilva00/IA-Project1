@@ -11,20 +11,28 @@ def place_piece(board, shape, position):
         board[py + y][px + x] = 1
 
 def check_full_lines(board):
-    lines_cleared = 0
+    lines_to_clear = set()
+    columns_to_clear = set()
 
+    # Check lines and columns to clear
     for y in range(GRID_SIZE):
         if all(board[y]):
-            board[y] = [0] * GRID_SIZE
-            lines_cleared += 1
+            lines_to_clear.add(y)
 
     for x in range(GRID_SIZE):
         if all(board[y][x] for y in range(GRID_SIZE)):
-            for y in range(GRID_SIZE):
-                board[y][x] = 0
-            lines_cleared += 1
+            columns_to_clear.add(x)
 
-    return lines_cleared
+    # Clear lines and columns
+    for y in lines_to_clear:
+        board[y] = [0] * GRID_SIZE
+
+
+    for x in columns_to_clear:
+        for y in range(GRID_SIZE):
+            board[y][x] = 0
+
+    return len(lines_to_clear) + len(columns_to_clear)
 
 def is_valid_position(board, shape, position):
     px, py = position
@@ -35,10 +43,11 @@ def is_valid_position(board, shape, position):
             return False
     return True
 
-def no_more_valid_moves(board, shapes):
+def no_more_valid_moves(board, shapes, visible):
     for shape in shapes:
-        for y in range(GRID_SIZE):
-            for x in range(GRID_SIZE):
-                if is_valid_position(board, shape, (x, y)):
-                    return False
+        if visible[shapes.index(shape)]:
+            for y in range(GRID_SIZE):
+                for x in range(GRID_SIZE):
+                    if is_valid_position(board, shape, (x, y)):
+                        return False
     return True

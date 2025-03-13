@@ -69,7 +69,7 @@ def draw_game(screen, game_model):
 
     screen.blit(background, (0, 0))
 
-    draw_board(screen, game_model.board, GRID_OFFSET_Y, GRID_OFFSET_X)
+    draw_board(screen, game_model.board)
     mx, my = pygame.mouse.get_pos()
     px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
 
