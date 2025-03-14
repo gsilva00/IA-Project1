@@ -7,6 +7,7 @@ def draw_select_level(screen):
     title_text_back = font.render('Level Select', True, BROWN)
     title_text_middle = font.render('Level Select', True, ORANGE)
     title_text_front = font.render('Level Select', True, WHITE)
+
     font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
     level_1_text = font.render('Level 1', True, WHITE)
     level_2_text = font.render('Level 2', True, WHITE)
@@ -29,7 +30,7 @@ def draw_select_level(screen):
         level_1_text = font.render('Level 1', True, WHITE)
     else:
         level_1_text = font.render('Level 1', True, BROWN)
-    
+
     if level_2_rect.collidepoint(mouse_pos):
         level_2_text = font.render('Level 2', True, WHITE)
     else:

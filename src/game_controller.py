@@ -1,7 +1,7 @@
 import sys
 import pygame
 from game_logic.constants import CELL_SIZE, GRID_OFFSET_Y
-from game_logic.rules import generate_shapes, place_piece, check_full_lines, is_valid_position, no_more_valid_moves
+from game_logic.rules import generate_pieces, place_piece, check_full_lines, is_valid_position, no_more_valid_moves
 
 
 class GameController:
@@ -65,25 +65,25 @@ def handle_game_events(game_controller):
             sys.exit()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if game_controller.model.selected_shape is None:
+            if game_controller.model.selected_piece is None:
                 mx, my = pygame.mouse.get_pos()
-                for i, shape in enumerate(game_controller.model.shapes):
-                    shape_x_start = (i * 5 + 2) * CELL_SIZE
-                    shape_x_end = shape_x_start + 4 * CELL_SIZE
-                    shape_y_start = 10 * CELL_SIZE
-                    shape_y_end = shape_y_start + 4 * CELL_SIZE
-                    if shape_x_start <= mx <= shape_x_end and shape_y_start <= my <= shape_y_end:
-                        game_controller.model.selected_shape = shape
+                for i, piece in enumerate(game_controller.model.pieces):
+                    piece_x_start = (i * 5 + 2) * CELL_SIZE
+                    piece_x_end = piece_x_start + 4 * CELL_SIZE
+                    piece_y_start = 10 * CELL_SIZE
+                    piece_y_end = piece_y_start + 4 * CELL_SIZE
+                    if piece_x_start <= mx <= piece_x_end and piece_y_start <= my <= piece_y_end:
+                        game_controller.model.selected_piece = piece
                         game_controller.model.selected_index = i
-                        game_controller.model.shapes_visible[i] = False # Mark the shape as not visible
+                        game_controller.model.pieces_visible[i] = False # Mark the piece as not visible
                         break
 
         if event.type == pygame.MOUSEBUTTONUP:
-            if game_controller.model.selected_shape is not None:
+            if game_controller.model.selected_piece is not None:
                 mx, my = pygame.mouse.get_pos()
                 px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
-                if is_valid_position(game_controller.model.board, game_controller.model.selected_shape, (px-4, py)):
-                    place_piece(game_controller.model.board, game_controller.model.selected_shape, (px-4, py))
+                if is_valid_position(game_controller.model.board, game_controller.model.selected_piece, (px-4, py)):
+                    place_piece(game_controller.model.board, game_controller.model.selected_piece, (px-4, py))
                     lines_cleared, target_blocks_cleared = check_full_lines(game_controller.model.board)
 
                     if game_controller.state != 'infinite':
@@ -96,16 +96,17 @@ def handle_game_events(game_controller):
                     else:
                         game_controller.model.score += lines_cleared
 
-                    if all(not visible for visible in game_controller.model.shapes_visible):
-                        game_controller.model.shapes = generate_shapes()
-                        game_controller.model.shapes_visible = [True] * len(game_controller.model.shapes)
+                    # All pieces placed, generate new ones
+                    if all(not visible for visible in game_controller.model.pieces_visible):
+                        game_controller.model.pieces = generate_pieces()
+                        game_controller.model.pieces_visible = [True] * len(game_controller.model.pieces)
 
-                    if no_more_valid_moves(game_controller.model.board, game_controller.model.shapes, game_controller.model.shapes_visible):
+                    if no_more_valid_moves(game_controller.model.board, game_controller.model.pieces, game_controller.model.pieces_visible):
                         game_controller.state = 'game_over'
                 else:
-                    game_controller.model.shapes_visible[game_controller.model.selected_index] = True # Restore visibility if not placed
+                    game_controller.model.pieces_visible[game_controller.model.selected_index] = True # Restore visibility if not placed
 
-                game_controller.model.selected_shape = None
+                game_controller.model.selected_piece = None
                 game_controller.model.selected_index = None
 
 def handle_game_over_events(game_controller, play_again_rect, menu_rect):

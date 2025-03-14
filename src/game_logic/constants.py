@@ -24,11 +24,11 @@ FILLED_COLOR = (100, 100, 255)
 _BASE_PATH = os.path.join(os.path.dirname(__file__), '../../')
 _SRC_PATH = os.path.join(_BASE_PATH, 'src')
 _ASSETS_PATH = os.path.join(_BASE_PATH, 'assets')
-_FONT_PATH = os.path.join(_ASSETS_PATH, 'fonts')
+_FONTS_PATH = os.path.join(_ASSETS_PATH, 'fonts')
 _IMAGES_PATH = os.path.join(_ASSETS_PATH, 'images')
 
 # Font
-FONT_PATH = os.path.join(_FONT_PATH, 'YangBagus-DYMX9.ttf')
+FONT_PATH = os.path.join(_FONTS_PATH, 'YangBagus-DYMX9.ttf')
 FONT_TITLE_SIZE = 74
 FONT_TEXT_SIZE = 64
 FONT_TEXT_SMALL_SIZE = 36
@@ -42,9 +42,9 @@ LIGHT_WOOD_PATH = os.path.join(_IMAGES_PATH, 'light_wood_square.png')
 DARK_WOOD_PATH = os.path.join(_IMAGES_PATH, 'dark_wood_square.png')
 
 '''
-    Shapes for the pieces in the game:
+    Pieces for the pieces in the game:
 
-    Each shape is a list of (x, y) coordinates
+    Each piece is a list of (x, y) coordinates
     The origin (0, 0) is the top-left corner of the piece
 '''
 PIECES = [

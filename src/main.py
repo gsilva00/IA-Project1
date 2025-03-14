@@ -6,6 +6,7 @@ from gui.game import draw_game, draw_game_over
 from game_controller import GameController, handle_menu_events, handle_game_events, handle_game_over_events, handle_select_level_events
 from game_logic.constants import GAME_ICON_PATH, LEVEL_BOARDS, LEVEL_BLOCKS
 
+
 def play_game(screen, game_controller):
     while game_controller.state == 'infinite':
         draw_game(screen, game_controller.model)

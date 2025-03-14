@@ -1,22 +1,22 @@
 from game_logic.constants import GRID_SIZE
-from game_logic.rules import generate_shapes
+from game_logic.rules import generate_pieces
 
 
 class GameModel:
     def __init__(self):
         self._board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
-        self._shapes = generate_shapes()
-        self._shapes_visible = [True] * len(self._shapes)
-        self._selected_shape = None
+        self._pieces = generate_pieces()
+        self._pieces_visible = [True] * len(self._pieces)
+        self._selected_piece = None
         self._selected_index = None
         self._score = 0
         self._blocks_to_break = 0
 
     def reset(self):
         self._board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
-        self._shapes = generate_shapes()
-        self._shapes_visible = [True] * len(self._shapes)
-        self._selected_shape = None
+        self._pieces = generate_pieces()
+        self._pieces_visible = [True] * len(self._pieces)
+        self._selected_piece = None
         self._selected_index = None
         self._score = 0
         self._blocks_to_break = 0
@@ -30,28 +30,28 @@ class GameModel:
         self._board = value
 
     @property
-    def shapes(self):
-        return self._shapes
+    def pieces(self):
+        return self._pieces
 
-    @shapes.setter
-    def shapes(self, value):
-        self._shapes = value
-
-    @property
-    def shapes_visible(self):
-        return self._shapes_visible
-
-    @shapes_visible.setter
-    def shapes_visible(self, value):
-        self._shapes_visible = value
+    @pieces.setter
+    def pieces(self, value):
+        self._pieces = value
 
     @property
-    def selected_shape(self):
-        return self._selected_shape
+    def pieces_visible(self):
+        return self._pieces_visible
 
-    @selected_shape.setter
-    def selected_shape(self, value):
-        self._selected_shape = value
+    @pieces_visible.setter
+    def pieces_visible(self, value):
+        self._pieces_visible = value
+
+    @property
+    def selected_piece(self):
+        return self._selected_piece
+
+    @selected_piece.setter
+    def selected_piece(self, value):
+        self._selected_piece = value
 
     @property
     def selected_index(self):
@@ -72,7 +72,7 @@ class GameModel:
     @property
     def blocks_to_break(self):
         return self._blocks_to_break
-    
+
     @blocks_to_break.setter
     def blocks_to_break(self, value):
         self._blocks_to_break = value
