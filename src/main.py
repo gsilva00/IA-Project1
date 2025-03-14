@@ -1,6 +1,6 @@
 import pygame
-import Game
 
+from game import Game
 from game_logic.constants import GAME_ICON_PATH
 
 

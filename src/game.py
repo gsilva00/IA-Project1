@@ -1,8 +1,6 @@
 import pygame
 
-from states import MainMenuState
-from states.GameState import GameStateManager
-
+from states import GameStateManager, MainMenuState
 
 class Game:
     def __init__(self):
