@@ -7,6 +7,7 @@ def draw_menu(screen):
     title_text_back = font.render('Wood Block', True, BROWN)
     title_text_middle = font.render('Wood Block', True, ORANGE)
     title_text_front = font.render('Wood Block', True, WHITE)
+
     font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
     levels_text = font.render('Levels', True, WHITE)
     infinite_text = font.render('Infinite', True, WHITE)

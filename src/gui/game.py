@@ -15,12 +15,12 @@ def draw_board(screen, board):
                 screen.blit(wood_target, (GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE))
             pygame.draw.rect(screen, GRAY, rect, 1)
 
-def draw_shape(screen, shape, position, is_selected, offset_y=0):
+def draw_piece(screen, piece, position, is_selected, offset_y=0):
     wood = pygame.image.load(WOOD_PATH)
     wood_light = pygame.image.load(LIGHT_WOOD_PATH)
 
     px, py = position
-    for x, y in shape:
+    for x, y in piece:
         rect = pygame.Rect((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
         if is_selected:
             screen.blit(wood_light, ((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE))
@@ -76,11 +76,11 @@ def draw_game(screen, game_model, level_number=0):
     mx, my = pygame.mouse.get_pos()
     px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
 
-    for i, shape in enumerate(game_model.shapes):
-        if game_model.shapes_visible[i] and (game_model.selected_shape is None or i != game_model.selected_index):
-            draw_shape(screen, shape, (i*5+2, 10), False)
+    for i, piece in enumerate(game_model.pieces):
+        if game_model.pieces_visible[i] and (game_model.selected_piece is None or i != game_model.selected_index):
+            draw_piece(screen, piece, (i*5+2, 10), False)
 
-    if game_model.selected_shape is not None:
-        draw_shape(screen, game_model.selected_shape, (px, py), True, GRID_OFFSET_Y)
+    if game_model.selected_piece is not None:
+        draw_piece(screen, game_model.selected_piece, (px, py), True, GRID_OFFSET_Y)
 
     draw_score(screen, game_model.score)
