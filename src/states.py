@@ -2,9 +2,10 @@ import copy
 import sys
 import pygame
 
+from game_data import GameData
 from game_logic.constants import (A_STAR, AI, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE, DARK_WOOD_PATH,
                                   DFS, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GRAY, GREEDY, GRID_OFFSET_X, GRID_OFFSET_Y,
-                                  GRID_SIZE, INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_BLOCKS, LEVEL_BOARDS, LIGHT_WOOD_PATH, ORANGE, PLAYER,
+                                  GRID_SIZE, INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LIGHT_WOOD_PATH, ORANGE, PLAYER,
                                   SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, WOOD_PATH)
 from game_logic.rules import check_full_lines, generate_pieces, is_valid_position, no_more_valid_moves, place_piece
 
@@ -477,19 +478,6 @@ class SelectLevelState(GameState):
     def exit(self, game):
         print("Exiting Select Level")
 
-
-class GameData:
-    def __init__(self, level=INFINITE):
-        self.board = copy.deepcopy(LEVEL_BOARDS[level]) if level != INFINITE else [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
-        self.pieces = generate_pieces() # TODO: Change this
-        self.following_pieces = generate_pieces() # TODO: Change this
-        self.blocks_to_break = copy.deepcopy(LEVEL_BLOCKS[level]) if level != INFINITE else 0
-
-    # Review this
-    # def reset(self):
-    #     self.board = copy.deepcopy(LEVEL_BOARDS[self.level]) if self.level != INFINITE else [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
-    #     self.pieces = generate_pieces()
-    #     self.following_pieces = generate_pieces()
 
 class GameplayState(GameState):
     def __init__(self, player, ai_algorithm, level=INFINITE):
