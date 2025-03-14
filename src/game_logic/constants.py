@@ -1,6 +1,6 @@
 import os
 
-# Constants for the game:
+# Constants for the organization and structure of the game:
 
 # For screen size
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 700
@@ -41,6 +41,11 @@ WOOD_PATH = os.path.join(_IMAGES_PATH, 'wood_square.png')
 LIGHT_WOOD_PATH = os.path.join(_IMAGES_PATH, 'light_wood_square.png')
 DARK_WOOD_PATH = os.path.join(_IMAGES_PATH, 'dark_wood_square.png')
 
+
+# --------------------------------------------------------------
+
+# Constants for the game:
+
 '''
     Pieces for the pieces in the game:
 
@@ -67,12 +72,26 @@ PIECES = [
     [(0, 0), (1, 0), (1, 1), (2, 0)]
 ]
 
-# --------------------------------------------------------------
+# For player type
+PLAYER = 0
+AI = 1
 
-# Constants for the game:
+# For AI algorithm type
+BFS = 0
+DFS = 1
+ITER_DEEP = 2
+UNIFORM_COST = 3
+GREEDY = 4
+A_STAR = 5
+WEIGHTED_A_STAR = 6
 
-# Constants for level 1:
+# For levels
+INFINITE = 0
+LEVEL_1 = 1
+LEVEL_2 = 2
+LEVEL_3 = 3
 
+# For level 1:
 LEVEL_1_BLOCKS = 4
 
 LEVEL_1_BOARD = [
@@ -86,8 +105,7 @@ LEVEL_1_BOARD = [
     [0,0,0,0,0,0,0,0]
 ]
 
-# Constants for level 2:
-
+# For level 2:
 LEVEL_2_BLOCKS = 16
 
 LEVEL_2_BOARD = [
@@ -101,8 +119,7 @@ LEVEL_2_BOARD = [
     [2,2,0,0,0,0,2,2]
 ]
 
-# Constants for level 3:
-
+# For level 3:
 LEVEL_3_BLOCKS = 24
 
 LEVEL_3_BOARD = [
