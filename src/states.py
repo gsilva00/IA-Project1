@@ -6,7 +6,7 @@ from game_data import GameData
 from game_logic.constants import (A_STAR, AI, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE, DARK_WOOD_PATH,
                                   DFS, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GRAY, GREEDY, GRID_OFFSET_X, GRID_OFFSET_Y,
                                   GRID_SIZE, INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LIGHT_WOOD_PATH, ORANGE, PLAYER,
-                                  SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, WOOD_PATH)
+                                  SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, WOOD_PATH, RED_WOOD_PATH, GAME_ICON_MENU_PATH)
 from game_logic.rules import check_full_lines, generate_pieces, is_valid_position, no_more_valid_moves, place_piece
 
 
@@ -87,17 +87,20 @@ class MainMenuState(GameState):
         title_text_back = font.render('Wood Block', True, BROWN)
         title_text_middle = font.render('Wood Block', True, ORANGE)
         title_text_front = font.render('Wood Block', True, WHITE)
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        start_text = font.render('Click Anywhere to Start', True, WHITE)
+        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+        start_text = font.render('* Click Anywhere to Start *', True, WHITE)
 
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         game.screen.blit(background, (0, 0))
+
+        icon_menu = pygame.image.load(GAME_ICON_MENU_PATH)
+        game.screen.blit(icon_menu, (SCREEN_WIDTH/2 - 100 ,SCREEN_HEIGHT/2 - 100))
 
         # Non-interactable rectangles
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
         title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
         title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        start_rect = start_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.5))
+        start_rect = start_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.35))
 
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
@@ -170,19 +173,23 @@ class SelectPlayerState(GameState):
         title_text_front = font.render('Wood Block', True, WHITE)
 
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        player_text = font.render('Player', True, WHITE)
+        subtitle_text = font.render('Select The Player', True, BROWN)
+        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+        player_text = font.render('Human', True, WHITE)
         ai_text = font.render('AI', True, WHITE)
+        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
         back_text = font.render('Go Back', True, WHITE)
 
         # Non-interactable rectangles
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
         title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
         title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
 
         # Interactable rectangles
-        self.player_rect = player_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.5))
-        self.ai_rect = ai_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2))
-        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.5))
+        self.player_rect = player_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
+        self.ai_rect = ai_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
+        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.20))
 
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         game.screen.blit(background, (0, 0))
@@ -195,13 +202,14 @@ class SelectPlayerState(GameState):
         if self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 2
 
-        player_text = font.render('Player', True, BROWN if self.selected_option == 0 else WHITE)
-        ai_text = font.render('AI', True, BROWN if self.selected_option == 1 else WHITE)
-        back_text = font.render('Go Back', True, BROWN if self.selected_option == 2 else WHITE)
+        player_text = font.render('Player', True, ORANGE if self.selected_option == 0 else WHITE)
+        ai_text = font.render('AI', True, ORANGE if self.selected_option == 1 else WHITE)
+        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
 
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
+        game.screen.blit(subtitle_text,subtitle_rect)
         game.screen.blit(player_text, self.player_rect)
         game.screen.blit(ai_text, self.ai_rect)
         game.screen.blit(back_text, self.back_rect)
@@ -284,6 +292,8 @@ class SelectAIAlgorithmState(GameState):
                         game.state_manager.push_state(SelectModeState(self.player, WEIGHTED_A_STAR))
                     elif self.selected_option == 7:
                         game.state_manager.pop_state()
+                    elif self.selected_option == 8:
+                        game.state_manager.pop_state()
 
     def render(self, game):
         font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
@@ -292,29 +302,32 @@ class SelectAIAlgorithmState(GameState):
         title_text_front = font.render('Wood Block', True, WHITE)
 
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        bfs_text = font.render('Breath First Search', True, WHITE)
-        dfs_text = font.render('Depth First Search', True, WHITE)
-        iter_deep_text = font.render('Iterative Deepening', True, WHITE)
-        uniform_cost_text = font.render('Uniform Cost Search', True, WHITE)
-        greedy_text = font.render('Greedy Search', True, WHITE)
-        a_star_text = font.render('A*', True, WHITE)
-        weighted_a_star_text = font.render('Weighted A*', True, WHITE)
-        back_text = font.render('Go Back', True, WHITE)
+        subtitle_text = font.render('Select The AI Algorithm', True, BROWN)
+        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+        bfs_text = font.render('Breath First Search', True, BROWN)
+        dfs_text = font.render('Depth First Search', True, BROWN)
+        iter_deep_text = font.render('Iterative Deepening', True, BROWN)
+        uniform_cost_text = font.render('Uniform Cost Search', True, BROWN)
+        greedy_text = font.render('Greedy Search', True, BROWN)
+        a_star_text = font.render('A*', True, BROWN)
+        weighted_a_star_text = font.render('Weighted A*', True, BROWN)
+        back_text = font.render('Go Back', True, BROWN)
 
         # Non-interactable rectangles
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
         title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
         title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
 
         # Interactable rectangles
-        self.bfs_rect = bfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.5))
-        self.dfs_rect = dfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2))
-        self.iter_deep_rect = iter_deep_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.8))
-        self.uniform_cost_rect = uniform_cost_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.6))
+        self.bfs_rect = bfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
+        self.dfs_rect = dfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.85))
+        self.iter_deep_rect = iter_deep_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.67))
+        self.uniform_cost_rect = uniform_cost_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.52))
         self.greedy_rect = greedy_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.4))
-        self.a_star_rect = a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.2))
-        self.weighted_a_star_rect = weighted_a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1))
-        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.5))
+        self.a_star_rect = a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.30))
+        self.weighted_a_star_rect = weighted_a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.21))
+        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.05))
 
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         game.screen.blit(background, (0, 0))
@@ -337,18 +350,19 @@ class SelectAIAlgorithmState(GameState):
         if self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 7
 
-        bfs_text = font.render('Breath First Search', True, BROWN if self.selected_option == 0 else WHITE)
-        dfs_text = font.render('Depth First Search', True, BROWN if self.selected_option == 1 else WHITE)
-        iter_deep_text = font.render('Iterative Deepening', True, BROWN if self.selected_option == 2 else WHITE)
-        uniform_cost_text = font.render('Uniform Cost Search', True, BROWN if self.selected_option == 3 else WHITE)
-        greedy_text = font.render('Greedy Search', True, BROWN if self.selected_option == 4 else WHITE)
-        a_star_text = font.render('A*', True, BROWN if self.selected_option == 5 else WHITE)
-        weighted_a_star_text = font.render('Weighted A*', True, BROWN if self.selected_option == 6 else WHITE)
-        back_text = font.render('Go Back', True, BROWN if self.selected_option == 7 else WHITE)
+        bfs_text = font.render('Breath First Search', True, ORANGE if self.selected_option == 0 else WHITE)
+        dfs_text = font.render('Depth First Search', True, ORANGE if self.selected_option == 1 else WHITE)
+        iter_deep_text = font.render('Iterative Deepening', True, ORANGE if self.selected_option == 2 else WHITE)
+        uniform_cost_text = font.render('Uniform Cost Search', True, ORANGE if self.selected_option == 3 else WHITE)
+        greedy_text = font.render('Greedy Search', True, ORANGE if self.selected_option == 4 else WHITE)
+        a_star_text = font.render('A*', True, ORANGE if self.selected_option == 5 else WHITE)
+        weighted_a_star_text = font.render('Weighted A*', True, ORANGE if self.selected_option == 6 else WHITE)
+        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 7 else WHITE)
 
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
+        game.screen.blit(subtitle_text,subtitle_rect)
         game.screen.blit(bfs_text, self.bfs_rect)
         game.screen.blit(dfs_text, self.dfs_rect)
         game.screen.blit(iter_deep_text, self.iter_deep_rect)
@@ -419,19 +433,23 @@ class SelectModeState(GameState):
         title_text_front = font.render('Wood Block', True, WHITE)
 
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        subtitle_text = font.render('Select The Game Mode', True, BROWN)
+        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
         levels_text = font.render('Levels', True, WHITE)
         infinite_text = font.render('Infinite', True, WHITE)
+        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
         quit_text = font.render('Go Back', True, WHITE)
 
         # Non-interactable rectangles
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
         title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
         title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
 
         # Interactable rectangles
-        self.levels_rect = levels_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.5))
-        self.infinite_rect = infinite_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2))
-        self.quit_rect = quit_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.5))
+        self.levels_rect = levels_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
+        self.infinite_rect = infinite_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
+        self.quit_rect = quit_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.20))
 
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         game.screen.blit(background, (0, 0))
@@ -444,13 +462,14 @@ class SelectModeState(GameState):
         if self.quit_rect.collidepoint(mouse_pos):
             self.selected_option = 2
 
-        levels_text = font.render('Levels', True, BROWN if self.selected_option == 0 else WHITE)
-        infinite_text = font.render('Infinite', True, BROWN if self.selected_option == 1 else WHITE)
-        quit_text = font.render('Go Back', True, BROWN if self.selected_option == 2 else WHITE)
+        levels_text = font.render('Levels', True, ORANGE if self.selected_option == 0 else WHITE)
+        infinite_text = font.render('Infinite', True, ORANGE if self.selected_option == 1 else WHITE)
+        quit_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
 
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
+        game.screen.blit(subtitle_text,subtitle_rect)
         game.screen.blit(levels_text, self.levels_rect)
         game.screen.blit(infinite_text, self.infinite_rect)
         game.screen.blit(quit_text, self.quit_rect)
@@ -511,14 +530,17 @@ class SelectLevelState(GameState):
                         game.state_manager.push_state(GameplayState(player=self.player, ai_algorithm=self.ai_algorithm, level=LEVEL_3))
                     elif self.selected_option == 3:
                         game.state_manager.pop_state()
+                    elif self.selected_option == 4:
+                        game.state_manager.pop_state()
 
     def render(self, game):
         font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        title_text_back = font.render('Level Select', True, BROWN)
-        title_text_middle = font.render('Level Select', True, ORANGE)
-        title_text_front = font.render('Level Select', True, WHITE)
+        title_text_back = font.render('Wood Block', True, BROWN)
+        title_text_middle = font.render('Wood Block', True, ORANGE)
+        title_text_front = font.render('Wood Block', True, WHITE)
 
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        subtitle_text = font.render('Select The Game Level', True, BROWN)
         level_1_text = font.render('Level 1', True, WHITE)
         level_2_text = font.render('Level 2', True, WHITE)
         level_3_text = font.render('Level 3', True, WHITE)
@@ -528,11 +550,12 @@ class SelectLevelState(GameState):
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
         title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
         title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
 
         # Interactable rectangles
-        self.level_1_rect = level_1_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.5))
-        self.level_2_rect = level_2_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2))
-        self.level_3_rect = level_3_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.5))
+        self.level_1_rect = level_1_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
+        self.level_2_rect = level_2_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
+        self.level_3_rect = level_3_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.42))
         self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.2))
 
         background = pygame.image.load(BACKGROUND_MENU_PATH)
@@ -548,14 +571,15 @@ class SelectLevelState(GameState):
         if self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 3
 
-        level_1_text = font.render('Level 1', True, BROWN if self.selected_option == 0 else WHITE)
-        level_2_text = font.render('Level 2', True, BROWN if self.selected_option == 1 else WHITE)
-        level_3_text = font.render('Level 3', True, BROWN if self.selected_option == 2 else WHITE)
-        back_text = font.render('Go Back', True, BROWN if self.selected_option == 3 else WHITE)
+        level_1_text = font.render('Level 1', True, ORANGE if self.selected_option == 0 else WHITE)
+        level_2_text = font.render('Level 2', True, ORANGE if self.selected_option == 1 else WHITE)
+        level_3_text = font.render('Level 3', True, ORANGE if self.selected_option == 2 else WHITE)
+        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 3 else WHITE)
 
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
+        game.screen.blit(subtitle_text,subtitle_rect)
         game.screen.blit(level_1_text, self.level_1_rect)
         game.screen.blit(level_2_text, self.level_2_rect)
         game.screen.blit(level_3_text, self.level_3_rect)
@@ -613,7 +637,7 @@ class GameplayState(GameState):
                             self.score += target_blocks_cleared
 
                             if self.game_data.blocks_to_break <= 0:
-                                game.state_manager.switch_to_base_state(LevelCompleteState(self.score))
+                                game.state_manager.switch_to_base_state(LevelCompleteState(score=self.score,level=self.level))
 
                         else:
                             self.score += lines_cleared
@@ -624,7 +648,7 @@ class GameplayState(GameState):
                             self.pieces_visible = [True] * len(self.game_data.pieces)
 
                         if no_more_valid_moves(self.game_data.board, self.game_data.pieces, self.pieces_visible):
-                            game.state_manager.switch_to_base_state(GameOverState(self.score))
+                            game.state_manager.switch_to_base_state(GameOverState(score=self.score,level=self.level))
                     else:
                         # Restore visibility if not placed
                         self.pieces_visible[self.selected_index] = True
@@ -639,7 +663,7 @@ class GameplayState(GameState):
     def render(self, game):
         def draw_board(screen, board):
             wood_dark = pygame.image.load(DARK_WOOD_PATH)
-            wood_target = pygame.image.load(WOOD_PATH)
+            wood_target = pygame.image.load(RED_WOOD_PATH)
 
             for y in range(GRID_SIZE):
                 for x in range(GRID_SIZE):
@@ -902,7 +926,7 @@ class LevelCompleteState(GameState):
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
         score_text = font.render(f'Score: {self.score}', True, ORANGE)
         next_level_text = font.render('Next Level', True, WHITE)
-        play_next_text = font.render('Play Next', True, WHITE)
+        play_next_text = font.render('Retry Level', True, WHITE)
         back_text = font.render('Go Back', True, WHITE)
 
         # Non-interactable rectangles
