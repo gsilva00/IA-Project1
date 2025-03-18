@@ -30,14 +30,16 @@ _IMAGES_PATH = os.path.join(_ASSETS_PATH, 'images')
 # Font
 FONT_PATH = os.path.join(_FONTS_PATH, 'YangBagus-DYMX9.ttf')
 FONT_TITLE_SIZE = 74
-FONT_TEXT_SIZE = 64
+FONT_TEXT_SIZE = 44
 FONT_TEXT_SMALL_SIZE = 36
 
 # Images
 GAME_ICON_PATH = os.path.join(_IMAGES_PATH, 'game_icon.png')
+GAME_ICON_MENU_PATH = os.path.join(_IMAGES_PATH, 'game_icon_menu.png')
 BACKGROUND_MENU_PATH = os.path.join(_IMAGES_PATH, 'background_menu.png')
 BACKGROUND_GAME_PATH = os.path.join(_IMAGES_PATH, 'background_game.png')
 WOOD_PATH = os.path.join(_IMAGES_PATH, 'wood_square.png')
+RED_WOOD_PATH = os.path.join(_IMAGES_PATH, 'red_wood_square.png')
 LIGHT_WOOD_PATH = os.path.join(_IMAGES_PATH, 'light_wood_square.png')
 DARK_WOOD_PATH = os.path.join(_IMAGES_PATH, 'dark_wood_square.png')
 
