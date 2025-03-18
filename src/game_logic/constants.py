@@ -93,6 +93,8 @@ LEVEL_1 = 1
 LEVEL_2 = 2
 LEVEL_3 = 3
 
+LEVELS = [LEVEL_1, LEVEL_2, LEVEL_3]
+
 # For level 1:
 LEVEL_1_BLOCKS = 4
 

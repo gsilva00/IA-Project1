@@ -5,7 +5,7 @@ import pygame
 from game_data import GameData
 from game_logic.constants import (A_STAR, AI, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE, DARK_WOOD_PATH,
                                   DFS, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GRAY, GREEDY, GRID_OFFSET_X, GRID_OFFSET_Y,
-                                  GRID_SIZE, INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LIGHT_WOOD_PATH, ORANGE, PLAYER,
+                                  GRID_SIZE, INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVELS, LIGHT_WOOD_PATH, ORANGE, PLAYER,
                                   SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, WOOD_PATH, RED_WOOD_PATH, GAME_ICON_MENU_PATH)
 from game_logic.rules import check_full_lines, generate_pieces, is_valid_position, no_more_valid_moves, place_piece
 
@@ -292,8 +292,6 @@ class SelectAIAlgorithmState(GameState):
                         game.state_manager.push_state(SelectModeState(self.player, WEIGHTED_A_STAR))
                     elif self.selected_option == 7:
                         game.state_manager.pop_state()
-                    elif self.selected_option == 8:
-                        game.state_manager.pop_state()
 
     def render(self, game):
         font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
@@ -401,10 +399,9 @@ class SelectModeState(GameState):
                 if self.levels_rect.collidepoint(event.pos):
                     game.state_manager.push_state(SelectLevelState(self.player, self.ai_algorithm))
                 elif self.infinite_rect.collidepoint(event.pos):
-                    game.state_manager.switch_to_base_state(GameplayState(self.player, self.ai_algorithm, INFINITE))
+                    game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, INFINITE))
                 elif self.quit_rect.collidepoint(event.pos):
-                    pygame.quit()
-                    sys.exit()
+                    game.state_manager.pop_state()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
@@ -422,7 +419,7 @@ class SelectModeState(GameState):
                     if self.selected_option == 0:
                         game.state_manager.push_state(SelectLevelState(self.player, self.ai_algorithm))
                     elif self.selected_option == 1:
-                        game.state_manager.switch_to_base_state(GameplayState(self.player, self.ai_algorithm, INFINITE))
+                        game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, INFINITE))
                     elif self.selected_option == 2:
                         game.state_manager.pop_state()
 
@@ -500,11 +497,11 @@ class SelectLevelState(GameState):
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.level_1_rect.collidepoint(event.pos):
-                    game.state_manager.push_state(GameplayState(player=self.player, ai_algorithm=self.ai_algorithm, level=LEVEL_1))
+                    game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_1))
                 elif self.level_2_rect.collidepoint(event.pos):
-                    game.state_manager.push_state(GameplayState(player=self.player, ai_algorithm=self.ai_algorithm, level=LEVEL_2))
+                    game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_2))
                 elif self.level_3_rect.collidepoint(event.pos):
-                    game.state_manager.push_state(GameplayState(player=self.player, ai_algorithm=self.ai_algorithm, level=LEVEL_3))
+                    game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_3))
                 elif self.back_rect.collidepoint(event.pos):
                     game.state_manager.pop_state()
             # Keyboard events
@@ -523,14 +520,12 @@ class SelectLevelState(GameState):
                         self.selected_option = (self.selected_option - 1) % 4
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
-                        game.state_manager.push_state(GameplayState(player=self.player, ai_algorithm=self.ai_algorithm, level=LEVEL_1))
+                        game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_1))
                     elif self.selected_option == 1:
-                        game.state_manager.push_state(GameplayState(player=self.player, ai_algorithm=self.ai_algorithm, level=LEVEL_2))
+                        game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_2))
                     elif self.selected_option == 2:
-                        game.state_manager.push_state(GameplayState(player=self.player, ai_algorithm=self.ai_algorithm, level=LEVEL_3))
+                        game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_3))
                     elif self.selected_option == 3:
-                        game.state_manager.pop_state()
-                    elif self.selected_option == 4:
                         game.state_manager.pop_state()
 
     def render(self, game):
@@ -593,7 +588,9 @@ class SelectLevelState(GameState):
 class GameplayState(GameState):
     def __init__(self, player, ai_algorithm, level=INFINITE):
         self.player = player
+        self.ai_algorithm = ai_algorithm
         self.level = level
+
         self.game_data = GameData(level)
         self.score = 0
         self.selected_piece = None
@@ -631,13 +628,13 @@ class GameplayState(GameState):
                         place_piece(self.game_data.board, self.selected_piece, (px-4, py))
                         lines_cleared, target_blocks_cleared = check_full_lines(self.game_data.board)
 
-                        # Not infinite mode
+                        # Levels mode
                         if self.level != INFINITE:
                             self.game_data.blocks_to_break -= target_blocks_cleared
                             self.score += target_blocks_cleared
 
                             if self.game_data.blocks_to_break <= 0:
-                                game.state_manager.switch_to_base_state(LevelCompleteState(score=self.score,level=self.level))
+                                game.state_manager.push_state(LevelCompleteState(self.score, self.player, self.ai_algorithm, self.level))
 
                         else:
                             self.score += lines_cleared
@@ -648,7 +645,7 @@ class GameplayState(GameState):
                             self.pieces_visible = [True] * len(self.game_data.pieces)
 
                         if no_more_valid_moves(self.game_data.board, self.game_data.pieces, self.pieces_visible):
-                            game.state_manager.switch_to_base_state(GameOverState(score=self.score,level=self.level))
+                            game.state_manager.push_state(GameOverState(self.score, self.player, self.ai_algorithm, self.level))
                     else:
                         # Restore visibility if not placed
                         self.pieces_visible[self.selected_index] = True
@@ -715,6 +712,8 @@ class GameplayState(GameState):
 
 class PauseState(GameState):
     def __init__(self):
+        self.selected_option = None
+
         self.resume_rect = None
         self.exit_rect = None
 
@@ -790,11 +789,14 @@ class PauseState(GameState):
         print("Exiting Pause")
 
 class GameOverState(GameState):
-    def __init__(self, level, score):
+    def __init__(self, player, score, ai_algorithm, level):
         self.selected_option = None
 
-        self.level = level
+        self.player = player
         self.score = score
+        self.ai_algorithm = ai_algorithm
+        self.level = level
+
         self.play_again_rect = None
         self.back_rect = None
 
@@ -808,7 +810,9 @@ class GameOverState(GameState):
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.play_again_rect.collidepoint(event.pos):
-                    game.state_manager.switch_to_base_state(GameplayState(self.level))
+                    game.state_manager.pop_state()
+                    game.state_manager.pop_state()
+                    game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
                 elif self.back_rect.collidepoint(event.pos):
                     # Pop the GameOverState and the GameplayState
                     game.state_manager.pop_state()
@@ -829,7 +833,9 @@ class GameOverState(GameState):
                         self.selected_option = (self.selected_option - 1) % 2
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
-                        game.state_manager.switch_to_base_state(GameplayState(self.level))
+                        game.state_manager.pop_state()
+                        game.state_manager.pop_state()
+                        game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
                     elif self.selected_option == 1:
                         game.state_manager.pop_state()
                         game.state_manager.pop_state()
@@ -872,11 +878,15 @@ class GameOverState(GameState):
         print("Exiting Game Over")
 
 class LevelCompleteState(GameState):
-    def __init__(self, level, score):
+    def __init__(self, score, player, ai_algorithm, level):
         self.selected_option = None
 
-        self.level = level
         self.score = score
+
+        self.player = player
+        self.ai_algorithm = ai_algorithm
+        self.level = level
+
         self.next_level_rect = None
         self.play_next_rect = None
         self.back_rect = None
@@ -891,11 +901,16 @@ class LevelCompleteState(GameState):
                 sys.exit()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.next_level_rect.collidepoint(event.pos):
-                    game.state_manager.switch_to_base_state(GameplayState(self.level + 1))
+                if self.next_level_rect.collidepoint(event.pos) and self.level != LEVELS[-1]:
+                    game.state_manager.pop_state()
+                    game.state_manager.pop_state()
+                    game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level + 1))
                 elif self.play_next_rect.collidepoint(event.pos):
-                    game.state_manager.switch_to_base_state(GameplayState(self.level))
+                    game.state_manager.pop_state()
+                    game.state_manager.pop_state()
+                    game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
                 elif self.back_rect.collidepoint(event.pos):
+                    game.state_manager.pop_state()
                     game.state_manager.pop_state()
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
@@ -912,11 +927,16 @@ class LevelCompleteState(GameState):
                     else:
                         self.selected_option = (self.selected_option - 1) % 3
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
-                    if self.selected_option == 0:
-                        game.state_manager.switch_to_base_state(GameplayState(self.level + 1))
+                    if self.selected_option == 0 and self.level != LEVELS[-1]:
+                        game.state_manager.pop_state()
+                        game.state_manager.pop_state()
+                        game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level + 1))
                     elif self.selected_option == 1:
-                        game.state_manager.switch_to_base_state(GameplayState(self.level))
+                        game.state_manager.pop_state()
+                        game.state_manager.pop_state()
+                        game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
                     elif self.selected_option == 2:
+                        game.state_manager.pop_state()
                         game.state_manager.pop_state()
 
     def render(self, game):
@@ -941,20 +961,22 @@ class LevelCompleteState(GameState):
         game.screen.fill(BROWN)
 
         mouse_pos = pygame.mouse.get_pos()
-        if self.next_level_rect.collidepoint(mouse_pos):
+        if self.next_level_rect.collidepoint(mouse_pos) and self.level != LEVELS[-1]:
             self.selected_option = 0
         elif self.play_next_rect.collidepoint(mouse_pos):
             self.selected_option = 1
         elif self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 2
 
-        next_level_text = font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
+        if self.level != LEVELS[-1]:
+            next_level_text = font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
         play_next_text = font.render('Play Next', True, ORANGE if self.selected_option == 1 else WHITE)
         back_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
 
         game.screen.blit(level_complete_text, level_complete_rect)
         game.screen.blit(score_text, score_rect)
-        game.screen.blit(next_level_text, self.next_level_rect)
+        if self.level != LEVELS[-1]:
+            game.screen.blit(next_level_text, self.next_level_rect)
         game.screen.blit(play_next_text, self.play_next_rect)
         game.screen.blit(back_text, self.back_rect)
         pygame.display.flip()
