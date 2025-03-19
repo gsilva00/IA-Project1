@@ -1,13 +1,14 @@
-import copy
+import math
 import sys
 import pygame
 
 from game_data import GameData
-from game_logic.constants import (A_STAR, AI, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE, DARK_WOOD_PATH,
-                                  DFS, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GRAY, GREEDY, GRID_OFFSET_X, GRID_OFFSET_Y,
-                                  GRID_SIZE, INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVELS, LIGHT_WOOD_PATH, ORANGE, PLAYER,
-                                  SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, WOOD_PATH, RED_WOOD_PATH, GAME_ICON_MENU_PATH)
-from game_logic.rules import check_full_lines, generate_pieces, is_valid_position, no_more_valid_moves, place_piece
+from game_logic.constants import (A_STAR, AI, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE,
+                                  DFS, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GREEDY, GRID_OFFSET_Y,
+                                  INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVELS, ORANGE, PLAYER,
+                                  SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, GAME_ICON_MENU_PATH)
+from game_logic.rules import check_full_lines, is_valid_position, no_more_valid_moves, place_piece
+from utils.ui import draw_board, draw_piece, draw_score
 
 
 class GameStateManager:
@@ -17,12 +18,22 @@ class GameStateManager:
         self.state_stack = []
 
     def switch_to_base_state(self, new_state):
+        """Switch to a new state and remove all previous states
+
+        Args:
+            new_state (GameState): The new state to switch to
+        """
         while self.state_stack:
             self.state_stack.pop().exit(self)
         new_state.enter(self)
         self.state_stack = [new_state]
 
     def push_state(self, new_state):
+        """Push a new state to the stack
+
+        Args:
+            new_state (GameState): The new state to push
+        """
         if self.current_state:
             self.current_state.exit(self)
         self.state_stack.append(new_state)
@@ -30,6 +41,11 @@ class GameStateManager:
         new_state.enter(self)
 
     def pop_state(self):
+        """Pop the current state
+
+        Returns:
+            bool: True if the state was popped, False otherwise
+        """
         if self.current_state:
             self.state_stack.pop().exit(self)
             print("Popped state")
@@ -38,8 +54,29 @@ class GameStateManager:
             return True
         return False
 
+    def subst_below_switch_to(self, new_state):
+        """Switch to a new state and remove the previous state
+
+        Args:
+            new_state (GameState): The new state to switch to
+
+        Returns:
+            bool: True if the state was switched, False otherwise
+        """
+        if len(self.state_stack) > 1:
+            self.state_stack[-2] = new_state
+            self.state_stack.pop().exit(self)
+            new_state.enter(self)
+            return True
+        return False
+
     @property
     def current_state(self):
+        """Get the current state
+
+        Returns:
+            GameState: The current state
+        """
         if self.state_stack:
             return self.state_stack[-1]
         return None
@@ -51,17 +88,36 @@ class GameState:
     # Model stores the game state
 
     def enter(self, game):
+        """Enter the game state
+
+        Args:
+            game (Game): The Game object
+        """
         pass
 
-    # Controller updates the game state
     def update(self, game, events):
+        """Controller that updates the game state
+
+        Args:
+            game (Game): The Game object
+            events (pygame.event.Event): The events that have occurred
+        """
         pass
 
-    # View renders the game state
     def render(self, game):
+        """View that renders the game state
+
+        Args:
+            game (Game): The Game object
+        """
         pass
 
     def exit(self, game):
+        """Exit the game state
+
+        Args:
+            game (Game): The Game object
+        """
         pass
 
 # ========================================
@@ -593,14 +649,25 @@ class GameplayState(GameState):
 
         self.game_data = GameData(level)
         self.score = 0
-        self.selected_piece = None
         self.selected_index = None
+        self.selected_piece = None
         self.pieces_visible = [True] * len(self.game_data.pieces)
+
+        self.ai_initial_pos = None
+        self.ai_current_pos = None
+        self.ai_target_pos = None
 
     def enter(self, game):
         print("Starting Gameplay")
 
     def update(self, game, events):
+        if self.player == PLAYER:
+            self.update_player(game, events)
+        else:
+            # No need to check for events (hopefully)
+            self.update_ai(game)
+
+    def update_player(self, game, events):
         for event in events:
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -615,8 +682,8 @@ class GameplayState(GameState):
                         piece_y_start = 10 * CELL_SIZE
                         piece_y_end = piece_y_start + 4 * CELL_SIZE
                         if piece_x_start <= mx <= piece_x_end and piece_y_start <= my <= piece_y_end:
-                            self.selected_piece = piece
                             self.selected_index = i
+                            self.selected_piece = piece
                             self.pieces_visible[i] = False # Mark the piece as not visible
                             break
 
@@ -641,7 +708,7 @@ class GameplayState(GameState):
 
                         # All pieces placed, generate new ones
                         if all(not visible for visible in self.pieces_visible):
-                            self.game_data.pieces = generate_pieces()
+                            self.game_data.getMorePlayablePieces()
                             self.pieces_visible = [True] * len(self.game_data.pieces)
 
                         if no_more_valid_moves(self.game_data.board, self.game_data.pieces, self.pieces_visible):
@@ -650,46 +717,68 @@ class GameplayState(GameState):
                         # Restore visibility if not placed
                         self.pieces_visible[self.selected_index] = True
 
-                    self.selected_piece = None
                     self.selected_index = None
+                    self.selected_piece = None
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
                     game.state_manager.push_state(PauseState())
 
-    def render(self, game):
-        def draw_board(screen, board):
-            wood_dark = pygame.image.load(DARK_WOOD_PATH)
-            wood_target = pygame.image.load(RED_WOOD_PATH)
+    def update_ai(self, game):
+        if self.selected_piece is not None:
+            if self.ai_current_pos == self.ai_target_pos:
+                # TODO: Fix: Check the position given by the AI algorithm
+                x, y = self.ai_current_pos
+                px, py = x // CELL_SIZE, (y // CELL_SIZE) - GRID_OFFSET_Y
+                if is_valid_position(self.game_data.board, self.selected_piece, (px-4, py)):
+                    place_piece(self.game_data.board, self.selected_piece, (px-4, py))
+                    lines_cleared, target_blocks_cleared = check_full_lines(self.game_data.board)
 
-            for y in range(GRID_SIZE):
-                for x in range(GRID_SIZE):
-                    rect = pygame.Rect(GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                    if board[y][x] == 1:
-                        screen.blit(wood_dark, (GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE))
-                    elif board[y][x] == 2:
-                        screen.blit(wood_target, (GRID_OFFSET_X + x * CELL_SIZE, (y + GRID_OFFSET_Y) * CELL_SIZE))
-                    pygame.draw.rect(screen, GRAY, rect, 1)
+                    # Levels mode
+                    if self.level != INFINITE:
+                        self.game_data.blocks_to_break -= target_blocks_cleared
+                        self.score += target_blocks_cleared
 
-        def draw_piece(screen, piece, position, is_selected, offset_y=0):
-            wood = pygame.image.load(WOOD_PATH)
-            wood_light = pygame.image.load(LIGHT_WOOD_PATH)
+                        if self.game_data.blocks_to_break <= 0:
+                            game.state_manager.push_state(LevelCompleteState(self.score, self.player, self.ai_algorithm, self.level))
 
-            px, py = position
-            for x, y in piece:
-                rect = pygame.Rect((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                if is_selected:
-                    screen.blit(wood_light, ((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE))
+                    else:
+                        self.score += lines_cleared
+
+                    # All pieces placed, generate new ones
+                    if all(not visible for visible in self.pieces_visible):
+                        self.game_data.getMorePlayablePieces()
+                        self.pieces_visible = [True] * len(self.game_data.pieces)
+
+                    if no_more_valid_moves(self.game_data.board, self.game_data.pieces, self.pieces_visible):
+                        game.state_manager.push_state(GameOverState(self.score, self.player, self.ai_algorithm, self.level))
+
                 else:
-                    screen.blit(wood, ((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE))
-                pygame.draw.rect(screen, GRAY, rect,1)
+                    # Restore visibility if not placed
+                    # Should not happen
+                    self.pieces_visible[self.selected_index] = True
 
-        def draw_score(screen, score):
-            font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-            text = font.render(f"Score: {score}", True, WHITE)
-            screen.blit(text, (10, 10))
+                self.selected_index = None
+                self.selected_piece = None
+                self.ai_initial_pos = None
+                self.ai_current_pos = None
+                self.ai_target_pos = None
 
+        else:
+            self.selected_index = None # TODO: Get the piece from the AI algorithm (preferably its index)
+            self.selected_piece = self.game_data.pieces[self.selected_index]
+            self.pieces_visible[self.selected_index] = False
+            self.ai_initial_pos = ((self.selected_index * 5 + 2) * CELL_SIZE, 10 * CELL_SIZE)
+            self.ai_current_pos = self.ai_initial_pos
+            self.ai_target_pos = None # TODO: Get the target position from the AI algorithm
 
+    def render(self, game):
+        if self.player == PLAYER:
+            self.render_player(game)
+        else:
+            self.render_ai(game)
+
+    def render_player(self, game):
         background = pygame.image.load(BACKGROUND_GAME_PATH)
         game.screen.blit(background, (0, 0))
 
@@ -703,6 +792,43 @@ class GameplayState(GameState):
 
         if self.selected_piece is not None:
             draw_piece(game.screen, self.selected_piece, (px, py), True, GRID_OFFSET_Y)
+
+        draw_score(game.screen, self.score)
+        pygame.display.flip()
+
+    def render_ai(self, game):
+        background = pygame.image.load(BACKGROUND_GAME_PATH)
+        game.screen.blit(background, (0, 0))
+
+        draw_board(game.screen, self.game_data.board)
+
+        for i, piece in enumerate(self.game_data.pieces):
+            if self.pieces_visible[i] and (self.selected_piece is None or i != self.selected_index):
+                draw_piece(game.screen, piece, (i*5+2, 10), False)
+
+        if self.selected_piece is not None:
+            if self.ai_current_pos != self.ai_target_pos:
+                cx, cy = self.ai_current_pos
+                tx, ty = self.ai_target_pos
+                distance = math.sqrt((tx - cx) ** 2 + (ty - cy) ** 2)
+                speed = 5  # TODO: Adjust the speed once we're able to test the AI
+                if distance < speed:
+                    self.ai_current_pos = self.ai_target_pos
+                else:
+                    # Calculate the direction vector
+                    direction_x = tx - self.ai_initial_pos[0]
+                    direction_y = ty - self.ai_initial_pos[1]
+
+                    norm = math.sqrt(direction_x ** 2 + direction_y ** 2)
+                    direction_x /= norm
+                    direction_y /= norm
+
+                    step_x = speed * direction_x
+                    step_y = speed * direction_y
+
+                    self.ai_current_pos = (cx + step_x, cy + step_y)
+
+                draw_piece(game.screen, self.selected_piece, self.ai_current_pos, True, 0)
 
         draw_score(game.screen, self.score)
         pygame.display.flip()
@@ -810,9 +936,7 @@ class GameOverState(GameState):
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.play_again_rect.collidepoint(event.pos):
-                    game.state_manager.pop_state()
-                    game.state_manager.pop_state()
-                    game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
+                    game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
                 elif self.back_rect.collidepoint(event.pos):
                     # Pop the GameOverState and the GameplayState
                     game.state_manager.pop_state()
@@ -833,9 +957,7 @@ class GameOverState(GameState):
                         self.selected_option = (self.selected_option - 1) % 2
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
-                        game.state_manager.pop_state()
-                        game.state_manager.pop_state()
-                        game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
+                        game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
                     elif self.selected_option == 1:
                         game.state_manager.pop_state()
                         game.state_manager.pop_state()
