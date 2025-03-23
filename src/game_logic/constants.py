@@ -11,14 +11,14 @@ GRID_SIZE = 8
 GRID_OFFSET_X = (SCREEN_WIDTH - GRID_SIZE * CELL_SIZE) // 2
 GRID_OFFSET_Y = 1
 
-# Colors
-BACKGROUND_COLOR = (30, 30, 30)
-BROWN = (60, 30, 20)
-ORANGE = (255, 130, 60)
-WHITE = (255, 255, 240)
-RED = (255, 0, 0)
-GRAY = (220, 210, 200)
-FILLED_COLOR = (100, 100, 255)
+# Colors (RGBA)
+BACKGROUND_COLOR = (30, 30, 30, 255)
+BROWN = (60, 30, 20, 255)
+ORANGE = (255, 130, 60, 255)
+WHITE = (255, 255, 240, 255)
+RED = (255, 0, 0, 255)
+GRAY = (220, 210, 200, 255)
+FILLED_COLOR = (100, 100, 255, 255)
 
 # Paths
 _BASE_PATH = os.path.join(os.path.dirname(__file__), '../../')
@@ -32,6 +32,7 @@ FONT_PATH = os.path.join(_FONTS_PATH, 'YangBagus-DYMX9.ttf')
 FONT_TITLE_SIZE = 74
 FONT_TEXT_SIZE = 44
 FONT_TEXT_SMALL_SIZE = 36
+FONT_HINT_SIZE = 24
 
 # Images
 GAME_ICON_PATH = os.path.join(_IMAGES_PATH, 'game_icon.png')
@@ -42,18 +43,18 @@ WOOD_PATH = os.path.join(_IMAGES_PATH, 'wood_square.png')
 RED_WOOD_PATH = os.path.join(_IMAGES_PATH, 'red_wood_square.png')
 LIGHT_WOOD_PATH = os.path.join(_IMAGES_PATH, 'light_wood_square.png')
 DARK_WOOD_PATH = os.path.join(_IMAGES_PATH, 'dark_wood_square.png')
+HINT_ICON_PATH = os.path.join(_IMAGES_PATH, 'hint_icon.png')
 
 
 # --------------------------------------------------------------
-
 # Constants for the game:
 
-'''
+"""
     Pieces for the pieces in the game:
 
     Each piece is a list of (x, y) coordinates
     The origin (0, 0) is the top-left corner of the piece
-'''
+"""
 PIECES = [
     [(0, 0)],
     [(0, 0), (1, 0)],
@@ -148,3 +149,10 @@ LEVEL_BLOCKS = {
     2: LEVEL_2_BLOCKS,
     3: LEVEL_3_BLOCKS
 }
+
+# --------------------------------------------------------------
+# Constants for return values:
+
+AI_NOT_FOUND = -1
+AI_RUNNING = 0
+AI_FOUND = 1

@@ -4,14 +4,37 @@ from game_logic.constants import GRID_SIZE, PIECES
 
 
 def generate_pieces():
+    """Generates list of lists with a total of 99 random pieces.
+
+    Returns:
+        List[List[int]]: List of 99 pieces, each piece is a list of pairs (x, y), each pair represents a block in the piece.
+    """
+
     return [[random.choice(PIECES) for _ in range(3)] for _ in range(33)]
 
-def place_piece(board, piece, position):
+def place_piece(board, piece, position, hint=False):
+    """Places a piece on the board.
+
+    Args:
+        board (List[List[int]]): The game board.
+        piece (List[Tuple[int, int]]): The piece to place.
+        position (Tuple[int, int]): The position to place the piece.
+    """
+
     px, py = position
     for x, y in piece:
-        board[py + y][px + x] = 1
+        board[py + y][px + x] = 1 if not hint else 0.5
 
-def check_full_lines(board):
+def clear_full_lines(board):
+    """Clears full lines and columns from the board.
+
+    Args:
+        board (List[List[int]]): The game board.
+
+    Returns:
+        Tuple[int, int]: The number of lines and columns cleared, and the number of target blocks cleared.
+    """
+
     # Sets to avoid counting the same line/column/block multiple times
     lines_to_clear = set()
     columns_to_clear = set()
@@ -56,7 +79,7 @@ def check_full_lines(board):
                 elif board[y][x] == 2:
                     target_blocks_cleared += 1
                     board[y][x] = 0
-                # Target block with more than
+                # Target block with more than one hit left
                 elif board[y][x] > 2:
                     board[y][x] = board[y][x] - 1
 
@@ -65,6 +88,17 @@ def check_full_lines(board):
     return len(lines_to_clear) + len(columns_to_clear), target_blocks_cleared
 
 def is_valid_position(board, piece, position):
+    """Checks if a piece can be placed on the board at the given position.
+
+    Args:
+        board (List[List[int]]): The game board.
+        piece (List[Tuple[int, int]]): The piece to place.
+        position (Tuple[int, int]): The position to place the piece.
+
+    Returns:
+        bool: True if the piece can be placed, False otherwise
+    """
+
     px, py = position
     for x, y in piece:
         if not (0 <= px + x < GRID_SIZE and 0 <= py + y < GRID_SIZE):
@@ -73,9 +107,19 @@ def is_valid_position(board, piece, position):
             return False
     return True
 
-def no_more_valid_moves(board, pieces, visible):
-    for i, piece in enumerate(pieces):
-        if visible[i]:
+def no_more_valid_moves(board, pieces):
+    """Checks if there are no more valid moves for the player.
+
+    Args:
+        board (List[List[int]): The game board.
+        pieces (List[List[Tuple[int, int]]]): The list of possible pieces to place.
+
+    Returns:
+        bool: True if there are no more valid moves, False otherwise.
+    """
+
+    for piece in pieces:
+        if piece is not None:
             for y in range(GRID_SIZE):
                 for x in range(GRID_SIZE):
                     if is_valid_position(board, piece, (x, y)):

@@ -1,19 +1,25 @@
+import copy
 import math
 import sys
+import time
 import pygame
 
+from AI.algorithm_registry import get_ai_algorithm, get_ai_algorithm_id
+from AI.algorithms import (AIAlgorithm, BFSAlgorithm, DFSAlgorithm, GreedySearchAlgorithm, IterDeepAlgorithm, 
+                           UniformCostAlgorithm, AStarAlgorithm, WeightedAStarAlgorithm)
 from game_data import GameData
-from game_logic.constants import (A_STAR, AI, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE,
-                                  DFS, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GREEDY, GRID_OFFSET_Y,
+from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND, AI_RUNNING, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE,
+                                  DFS, FONT_HINT_SIZE, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GRAY, GREEDY, GRID_OFFSET_Y, HINT_ICON_PATH,
                                   INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVELS, ORANGE, PLAYER,
                                   SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, GAME_ICON_MENU_PATH)
-from game_logic.rules import check_full_lines, is_valid_position, no_more_valid_moves, place_piece
+from game_logic.rules import clear_full_lines, is_valid_position, no_more_valid_moves, place_piece
 from utils.ui import draw_board, draw_piece, draw_score
 
 
 class GameStateManager:
-    """ Manages the game states' stack
+    """Manages the game states' stack
     """
+
     def __init__(self):
         self.state_stack = []
 
@@ -23,6 +29,7 @@ class GameStateManager:
         Args:
             new_state (GameState): The new state to switch to
         """
+
         while self.state_stack:
             self.state_stack.pop().exit(self)
         new_state.enter(self)
@@ -34,6 +41,7 @@ class GameStateManager:
         Args:
             new_state (GameState): The new state to push
         """
+
         if self.current_state:
             self.current_state.exit(self)
         self.state_stack.append(new_state)
@@ -46,6 +54,7 @@ class GameStateManager:
         Returns:
             bool: True if the state was popped, False otherwise
         """
+
         if self.current_state:
             self.state_stack.pop().exit(self)
             print("Popped state")
@@ -63,6 +72,7 @@ class GameStateManager:
         Returns:
             bool: True if the state was switched, False otherwise
         """
+
         if len(self.state_stack) > 1:
             self.state_stack[-2] = new_state
             self.state_stack.pop().exit(self)
@@ -77,6 +87,7 @@ class GameStateManager:
         Returns:
             GameState: The current state
         """
+
         if self.state_stack:
             return self.state_stack[-1]
         return None
@@ -84,11 +95,12 @@ class GameStateManager:
 
 class GameState:
     """ Base class for all game states
+
     """
-    # Model stores the game state
+    # Each subclass stores its Model
 
     def enter(self, game):
-        """Enter the game state
+        """Called when the game state is entered
 
         Args:
             game (Game): The Game object
@@ -113,7 +125,7 @@ class GameState:
         pass
 
     def exit(self, game):
-        """Exit the game state
+        """Called when the game state is exited
 
         Args:
             game (Game): The Game object
@@ -124,6 +136,12 @@ class GameState:
 # Concrete Game States
 # ========================================
 class MainMenuState(GameState):
+    """Main menu of the game
+
+    Args:
+        GameState (GameState): Class from which MainMenuState inherits (Base class for all game states)
+    """
+
     def __init__(self):
         self.alpha = 255  # For transition effect
 
@@ -177,7 +195,14 @@ class MainMenuState(GameState):
         # self.alpha = 255  # Reset alpha for next time
 
 class SelectPlayerState(GameState):
+    """Menu to select either player mode or AI mode
+
+    Args:
+        GameState (GameState): Class from which SelectPlayerState inherits (Base class for all game states)
+    """
+
     def __init__(self):
+        self.keyboard_active = False
         self.selected_option = None
 
         self.player_rect = None
@@ -202,18 +227,22 @@ class SelectPlayerState(GameState):
                     game.state_manager.pop_state()
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
+                    self.keyboard_active = True
+
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
-                        self.selected_option = 0
-                    else:
-                        self.selected_option = (self.selected_option + 1) % 3
+
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option == None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 3
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    if self.selected_option == None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option + 1) % 3
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
                         game.state_manager.push_state(SelectAIAlgorithmState(PLAYER))
@@ -253,10 +282,12 @@ class SelectPlayerState(GameState):
         mouse_pos = pygame.mouse.get_pos()
         if self.player_rect.collidepoint(mouse_pos):
             self.selected_option = 0
-        if self.ai_rect.collidepoint(mouse_pos):
+        elif self.ai_rect.collidepoint(mouse_pos):
             self.selected_option = 1
-        if self.back_rect.collidepoint(mouse_pos):
+        elif self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 2
+        elif not self.keyboard_active:
+            self.selected_option = None
 
         player_text = font.render('Player', True, ORANGE if self.selected_option == 0 else WHITE)
         ai_text = font.render('AI', True, ORANGE if self.selected_option == 1 else WHITE)
@@ -276,7 +307,14 @@ class SelectPlayerState(GameState):
         print("Exiting Select Player Menu")
 
 class SelectAIAlgorithmState(GameState):
+    """Menu to select the AI algorithm (for player mode's hints or for AI mode)
+
+    Args:
+        GameState (GameState): Class from which SelectAIAlgorithmState inherits (Base class for all game states)
+    """
+
     def __init__(self, player):
+        self.keyboard_active = False
         self.selected_option = None
 
         self.player = player
@@ -319,18 +357,22 @@ class SelectAIAlgorithmState(GameState):
                     game.state_manager.pop_state()
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
+                    self.keyboard_active = True
+
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
-                        self.selected_option = 0
-                    else:
-                        self.selected_option = (self.selected_option + 1) % 8
+
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option == None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 8
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    if self.selected_option == None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option + 1) % 8
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
                         game.state_manager.push_state(SelectModeState(self.player, BFS))
@@ -389,20 +431,22 @@ class SelectAIAlgorithmState(GameState):
         mouse_pos = pygame.mouse.get_pos()
         if self.bfs_rect.collidepoint(mouse_pos):
             self.selected_option = 0
-        if self.dfs_rect.collidepoint(mouse_pos):
+        elif self.dfs_rect.collidepoint(mouse_pos):
             self.selected_option = 1
-        if self.iter_deep_rect.collidepoint(mouse_pos):
+        elif self.iter_deep_rect.collidepoint(mouse_pos):
             self.selected_option = 2
-        if self.uniform_cost_rect.collidepoint(mouse_pos):
+        elif self.uniform_cost_rect.collidepoint(mouse_pos):
             self.selected_option = 3
-        if self.greedy_rect.collidepoint(mouse_pos):
+        elif self.greedy_rect.collidepoint(mouse_pos):
             self.selected_option = 4
-        if self.a_star_rect.collidepoint(mouse_pos):
+        elif self.a_star_rect.collidepoint(mouse_pos):
             self.selected_option = 5
-        if self.weighted_a_star_rect.collidepoint(mouse_pos):
+        elif self.weighted_a_star_rect.collidepoint(mouse_pos):
             self.selected_option = 6
-        if self.back_rect.collidepoint(mouse_pos):
+        elif self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 7
+        elif not self.keyboard_active:
+            self.selected_option = None
 
         bfs_text = font.render('Breath First Search', True, ORANGE if self.selected_option == 0 else WHITE)
         dfs_text = font.render('Depth First Search', True, ORANGE if self.selected_option == 1 else WHITE)
@@ -431,7 +475,14 @@ class SelectAIAlgorithmState(GameState):
         print("Exiting Select AI Algorithm Menu")
 
 class SelectModeState(GameState):
+    """Menu to select the game mode (Levels or Infinite)
+
+    Args:
+        GameState (GameState): Class from which SelectModeState inherits (Base class for all game states)
+    """
+
     def __init__(self, player, ai_algorithm):
+        self.keyboard_active = False
         self.selected_option = None
 
         self.player = player
@@ -459,18 +510,22 @@ class SelectModeState(GameState):
                 elif self.quit_rect.collidepoint(event.pos):
                     game.state_manager.pop_state()
             elif event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
+                    self.keyboard_active = True
+
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
-                        self.selected_option = 0
-                    else:
-                        self.selected_option = (self.selected_option + 1) % 3
+
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option == None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 3
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    if self.selected_option == None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option + 1) % 3
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
                         game.state_manager.push_state(SelectLevelState(self.player, self.ai_algorithm))
@@ -510,10 +565,12 @@ class SelectModeState(GameState):
         mouse_pos = pygame.mouse.get_pos()
         if self.levels_rect.collidepoint(mouse_pos):
             self.selected_option = 0
-        if self.infinite_rect.collidepoint(mouse_pos):
+        elif self.infinite_rect.collidepoint(mouse_pos):
             self.selected_option = 1
-        if self.quit_rect.collidepoint(mouse_pos):
+        elif self.quit_rect.collidepoint(mouse_pos):
             self.selected_option = 2
+        elif not self.keyboard_active:
+            self.selected_option = None
 
         levels_text = font.render('Levels', True, ORANGE if self.selected_option == 0 else WHITE)
         infinite_text = font.render('Infinite', True, ORANGE if self.selected_option == 1 else WHITE)
@@ -532,7 +589,14 @@ class SelectModeState(GameState):
         print("Exiting Main Menu")
 
 class SelectLevelState(GameState):
+    """Menu to select the game level for the Levels mode
+
+    Args:
+        GameState (GameState): Class from which SelectLevelState inherits (Base class for all game states)
+    """
+
     def __init__(self, player, ai_algorithm):
+        self.keyboard_active = False
         self.selected_option = None
 
         self.player = player
@@ -562,18 +626,22 @@ class SelectLevelState(GameState):
                     game.state_manager.pop_state()
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
+                    self.keyboard_active = True
+
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
-                        self.selected_option = 0
-                    else:
-                        self.selected_option = (self.selected_option + 1) % 4
+
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option == None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 4
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    if self.selected_option == None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option + 1) % 4
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
                         game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_1))
@@ -615,12 +683,14 @@ class SelectLevelState(GameState):
         mouse_pos = pygame.mouse.get_pos()
         if self.level_1_rect.collidepoint(mouse_pos):
             self.selected_option = 0
-        if self.level_2_rect.collidepoint(mouse_pos):
+        elif self.level_2_rect.collidepoint(mouse_pos):
             self.selected_option = 1
-        if self.level_3_rect.collidepoint(mouse_pos):
+        elif self.level_3_rect.collidepoint(mouse_pos):
             self.selected_option = 2
-        if self.back_rect.collidepoint(mouse_pos):
+        elif self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 3
+        elif not self.keyboard_active:
+            self.selected_option = None
 
         level_1_text = font.render('Level 1', True, ORANGE if self.selected_option == 0 else WHITE)
         level_2_text = font.render('Level 2', True, ORANGE if self.selected_option == 1 else WHITE)
@@ -642,20 +712,33 @@ class SelectLevelState(GameState):
 
 
 class GameplayState(GameState):
+    """Gameplay state of the game
+
+    Args:
+        GameState (GameState): Class from which GameplayState inherits (Base class for all game states)
+    """
+
     def __init__(self, player, ai_algorithm, level=INFINITE):
         self.player = player
-        self.ai_algorithm = ai_algorithm
+        self.ai_algorithm = get_ai_algorithm(ai_algorithm, level)
         self.level = level
 
         self.game_data = GameData(level)
         self.score = 0
         self.selected_index = None
         self.selected_piece = None
-        self.pieces_visible = [True] * len(self.game_data.pieces)
+
+        # Start running the AI algorithm ASAP
+        self.ai_algorithm.get_next_move(self.game_data)
+        self.ai_hint_index = None
+        self.ai_hint_position = None
+        self.ai_running_start_time = None
 
         self.ai_initial_pos = None
         self.ai_current_pos = None
         self.ai_target_pos = None
+
+        self.hint_button = None
 
     def enter(self, game):
         print("Starting Gameplay")
@@ -677,15 +760,16 @@ class GameplayState(GameState):
                 if self.selected_piece is None:
                     mx, my = pygame.mouse.get_pos()
                     for i, piece in enumerate(self.game_data.pieces):
-                        piece_x_start = (i * 5 + 2) * CELL_SIZE
-                        piece_x_end = piece_x_start + 4 * CELL_SIZE
-                        piece_y_start = 10 * CELL_SIZE
-                        piece_y_end = piece_y_start + 4 * CELL_SIZE
-                        if piece_x_start <= mx <= piece_x_end and piece_y_start <= my <= piece_y_end:
-                            self.selected_index = i
-                            self.selected_piece = piece
-                            self.pieces_visible[i] = False # Mark the piece as not visible
-                            break
+                        if piece is not None:
+                            piece_x_start = (i * 5 + 2) * CELL_SIZE
+                            piece_x_end = piece_x_start + 4 * CELL_SIZE
+                            piece_y_start = 10 * CELL_SIZE
+                            piece_y_end = piece_y_start + 4 * CELL_SIZE
+                            if piece_x_start <= mx <= piece_x_end and piece_y_start <= my <= piece_y_end:
+                                self.selected_index = i
+                                self.selected_piece = piece
+                                self.game_data.pieces[i] = None
+                                break
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if self.selected_piece is not None:
@@ -693,7 +777,7 @@ class GameplayState(GameState):
                     px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
                     if is_valid_position(self.game_data.board, self.selected_piece, (px-4, py)):
                         place_piece(self.game_data.board, self.selected_piece, (px-4, py))
-                        lines_cleared, target_blocks_cleared = check_full_lines(self.game_data.board)
+                        lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
 
                         # Levels mode
                         if self.level != INFINITE:
@@ -701,21 +785,26 @@ class GameplayState(GameState):
                             self.score += target_blocks_cleared
 
                             if self.game_data.blocks_to_break <= 0:
-                                game.state_manager.push_state(LevelCompleteState(self.score, self.player, self.ai_algorithm, self.level))
+                                game.state_manager.push_state(LevelCompleteState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
                         else:
                             self.score += lines_cleared
 
-                        # All pieces placed, generate new ones
-                        if all(not visible for visible in self.pieces_visible):
-                            self.game_data.getMorePlayablePieces()
-                            self.pieces_visible = [True] * len(self.game_data.pieces)
+                        # Clear the hint
+                        self.ai_hint_index = None
+                        self.ai_hint_position = None
 
-                        if no_more_valid_moves(self.game_data.board, self.game_data.pieces, self.pieces_visible):
-                            game.state_manager.push_state(GameOverState(self.score, self.player, self.ai_algorithm, self.level))
+                        # All pieces placed (all None), generate new ones
+                        if not any(self.game_data.pieces):
+                            self.game_data.getMorePlayablePieces()
+
+                        if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
+                            game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
                     else:
                         # Restore visibility if not placed
-                        self.pieces_visible[self.selected_index] = True
+                        for i, piece in enumerate(self.game_data.pieces):
+                            if self.selected_index == i and piece == None:
+                                self.game_data.pieces[i] = self.selected_piece
 
                     self.selected_index = None
                     self.selected_piece = None
@@ -724,53 +813,25 @@ class GameplayState(GameState):
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
                     game.state_manager.push_state(PauseState())
 
+                if event.key == pygame.K_h:
+                    _status, (self.ai_hint_index, self.ai_hint_position) = self.ai_algorithm.get_next_move(self.game_data)
+
     def update_ai(self, game):
-        if self.selected_piece is not None:
-            if self.ai_current_pos == self.ai_target_pos:
-                # TODO: Fix: Check the position given by the AI algorithm
-                x, y = self.ai_current_pos
-                px, py = x // CELL_SIZE, (y // CELL_SIZE) - GRID_OFFSET_Y
-                if is_valid_position(self.game_data.board, self.selected_piece, (px-4, py)):
-                    place_piece(self.game_data.board, self.selected_piece, (px-4, py))
-                    lines_cleared, target_blocks_cleared = check_full_lines(self.game_data.board)
+        status, (piece_index, piece_position) = self.ai_algorithm.get_next_move(self.game_data)
+        if status == AI_RUNNING:
+            if self.ai_running_start_time is None:
+                self.ai_running_start_time = time.time()
+        elif status == AI_NOT_FOUND:
+            self.ai_running_start_time = None
+        elif status == AI_FOUND:
+            self.ai_running_start_time = None
 
-                    # Levels mode
-                    if self.level != INFINITE:
-                        self.game_data.blocks_to_break -= target_blocks_cleared
-                        self.score += target_blocks_cleared
-
-                        if self.game_data.blocks_to_break <= 0:
-                            game.state_manager.push_state(LevelCompleteState(self.score, self.player, self.ai_algorithm, self.level))
-
-                    else:
-                        self.score += lines_cleared
-
-                    # All pieces placed, generate new ones
-                    if all(not visible for visible in self.pieces_visible):
-                        self.game_data.getMorePlayablePieces()
-                        self.pieces_visible = [True] * len(self.game_data.pieces)
-
-                    if no_more_valid_moves(self.game_data.board, self.game_data.pieces, self.pieces_visible):
-                        game.state_manager.push_state(GameOverState(self.score, self.player, self.ai_algorithm, self.level))
-
-                else:
-                    # Restore visibility if not placed
-                    # Should not happen
-                    self.pieces_visible[self.selected_index] = True
-
-                self.selected_index = None
-                self.selected_piece = None
-                self.ai_initial_pos = None
-                self.ai_current_pos = None
-                self.ai_target_pos = None
-
-        else:
-            self.selected_index = None # TODO: Get the piece from the AI algorithm (preferably its index)
             self.selected_piece = self.game_data.pieces[self.selected_index]
-            self.pieces_visible[self.selected_index] = False
-            self.ai_initial_pos = ((self.selected_index * 5 + 2) * CELL_SIZE, 10 * CELL_SIZE)
-            self.ai_current_pos = self.ai_initial_pos
-            self.ai_target_pos = None # TODO: Get the target position from the AI algorithm
+            for i, piece in enumerate(self.game_data.pieces):
+                if piece == self.selected_piece:
+                    self.ai_initial_pos = (i * 5 + 2, 10)
+                    self.ai_current_pos = self.ai_initial_pos
+                    break
 
     def render(self, game):
         if self.player == PLAYER:
@@ -779,31 +840,65 @@ class GameplayState(GameState):
             self.render_ai(game)
 
     def render_player(self, game):
+        font = pygame.font.Font(FONT_PATH, FONT_HINT_SIZE)
         background = pygame.image.load(BACKGROUND_GAME_PATH)
+
+        hint_text = font.render('H', True, WHITE)
+        hint_icon = pygame.image.load(HINT_ICON_PATH).convert_alpha() # With transparency
+        hint_icon = pygame.transform.scale(hint_icon, (60, 60)) # Resize the hint icon
+
         game.screen.blit(background, (0, 0))
 
-        draw_board(game.screen, self.game_data.board)
+        # Draw the hint piece
+        if self.ai_hint_index is not None and self.ai_hint_position is not None:
+            board = copy.deepcopy(self.game_data.board)
+            piece = self.game_data.pieces[self.ai_hint_index]
+            place_piece(board, piece, self.ai_hint_position)
+            draw_board(game.screen, board)
+        else:
+            draw_board(game.screen, self.game_data.board)
+
         mx, my = pygame.mouse.get_pos()
         px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
 
+        # Draw the list of pieces
         for i, piece in enumerate(self.game_data.pieces):
-            if self.pieces_visible[i] and (self.selected_piece is None or i != self.selected_index):
+            if piece != None:
                 draw_piece(game.screen, piece, (i*5+2, 10), False)
 
         if self.selected_piece is not None:
             draw_piece(game.screen, self.selected_piece, (px, py), True, GRID_OFFSET_Y)
 
+        # Hint button
+        self.hint_button = pygame.draw.circle(game.screen, ORANGE, (SCREEN_WIDTH - 50, 50), 30)
+        game.screen.blit(hint_icon, self.hint_button.topleft)
+        game.screen.blit(hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
+        if self.ai_hint_index is None or self.ai_hint_position is None:
+            # If no hint is available, grey out the hint button
+            self.hint_button = pygame.draw.circle(game.screen, (128, 128, 128), (SCREEN_WIDTH - 50, 50), 30)
+            greyed_hint_icon = hint_icon.copy()
+            greyed_hint_icon.fill(GRAY, special_flags=pygame.BLEND_RGBA_MULT)
+            greyed_hint_text = font.render('H', True, GRAY)
+            game.screen.blit(greyed_hint_icon, self.hint_button.topleft)
+            game.screen.blit(greyed_hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
+        elif self.hint_button.collidepoint(mx, my):
+            self.hint_button = pygame.draw.circle(game.screen, BROWN, (SCREEN_WIDTH - 50, 50), 30)
+            game.screen.blit(hint_icon, self.hint_button.topleft)
+            game.screen.blit(hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
+
         draw_score(game.screen, self.score)
         pygame.display.flip()
 
     def render_ai(self, game):
+        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
         background = pygame.image.load(BACKGROUND_GAME_PATH)
         game.screen.blit(background, (0, 0))
 
         draw_board(game.screen, self.game_data.board)
 
+        # Draw the list of pieces
         for i, piece in enumerate(self.game_data.pieces):
-            if self.pieces_visible[i] and (self.selected_piece is None or i != self.selected_index):
+            if piece != None:
                 draw_piece(game.screen, piece, (i*5+2, 10), False)
 
         if self.selected_piece is not None:
@@ -830,6 +925,17 @@ class GameplayState(GameState):
 
                 draw_piece(game.screen, self.selected_piece, self.ai_current_pos, True, 0)
 
+        if self.ai_running_start_time is not None:
+            elapsed_time = time.time() - self.ai_running_start_time
+            elapsed_time_text = font.render(f'Time Elapsed: {elapsed_time:.3f} seconds', True, WHITE)
+            elapsed_time_rect = elapsed_time_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            overlay.set_alpha(128)  # Set transparency level (0-255)
+            overlay.fill((128, 128, 128))  # Grey color
+            game.screen.blit(overlay, (0, 0))
+            game.screen.blit(elapsed_time_text, elapsed_time_rect)
+
         draw_score(game.screen, self.score)
         pygame.display.flip()
 
@@ -837,7 +943,14 @@ class GameplayState(GameState):
         print("Exiting Gameplay")
 
 class PauseState(GameState):
+    """Pause menu
+
+    Args:
+        GameState (GameState): Class from which PauseState inherits (Base class for all game states)
+    """
+
     def __init__(self):
+        self.keyboard_active = False
         self.selected_option = None
 
         self.resume_rect = None
@@ -859,20 +972,24 @@ class PauseState(GameState):
                     game.state_manager.switch_to_base_state(MainMenuState())
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
+                if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
+                    self.keyboard_active = True
+
+                if event.key in [pygame.K_r, pygame.K_ESCAPE, pygame.K_p]:
                     game.state_manager.pop_state()
-                elif event.key == pygame.K_ESCAPE:
+                elif event.key == pygame.K_BACKSPACE:
                     game.state_manager.switch_to_base_state(MainMenuState())
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
-                        self.selected_option = 0
-                    else:
-                        self.selected_option = (self.selected_option + 1) % 2
+
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option == None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 2
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    if self.selected_option == None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option + 1) % 2
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
                         game.state_manager.pop_state()
@@ -885,7 +1002,7 @@ class PauseState(GameState):
 
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
         resume_text = font.render('Press R to Resume', True, WHITE)
-        exit_text = font.render('Press ESC to Exit', True, WHITE)
+        exit_text = font.render('Press BACKSPACE to Exit', True, WHITE)
 
         # Non-interactable rectangles
         pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
@@ -899,9 +1016,11 @@ class PauseState(GameState):
         mouse_pos = pygame.mouse.get_pos()
 
         if self.resume_rect.collidepoint(mouse_pos):
-            self.selected_option = None
-        if self.exit_rect.collidepoint(mouse_pos):
+            self.selected_option = 0
+        elif self.exit_rect.collidepoint(mouse_pos):
             self.selected_option = 1
+        elif not self.keyboard_active:
+            self.selected_option = None
 
         resume_text = font.render('Press R to Resume', True, ORANGE if self.selected_option == 0 else WHITE)
         exit_text = font.render('Press ESC to Exit', True, ORANGE if self.selected_option == 1 else WHITE)
@@ -915,7 +1034,14 @@ class PauseState(GameState):
         print("Exiting Pause")
 
 class GameOverState(GameState):
+    """Game Over menu
+
+    Args:
+        GameState (_type_): _description_
+    """
+
     def __init__(self, player, score, ai_algorithm, level):
+        self.keyboard_active = False
         self.selected_option = None
 
         self.player = player
@@ -942,19 +1068,23 @@ class GameOverState(GameState):
                     game.state_manager.pop_state()
                     game.state_manager.pop_state()
             elif event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
+                    self.keyboard_active = True
+
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
                     game.state_manager.pop_state()
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
-                        self.selected_option = 0
-                    else:
-                        self.selected_option = (self.selected_option + 1) % 2
+
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option == None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 2
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    if self.selected_option == None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option + 1) % 2
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
                         game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
@@ -986,6 +1116,8 @@ class GameOverState(GameState):
             self.selected_option = 0
         elif self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 1
+        elif not self.keyboard_active:
+            self.selected_option = None
 
         play_again_text = font.render('Play Again', True, ORANGE if self.selected_option == 0 else WHITE)
         back_text = font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
@@ -1000,7 +1132,14 @@ class GameOverState(GameState):
         print("Exiting Game Over")
 
 class LevelCompleteState(GameState):
+    """Level Complete menu
+
+    Args:
+        GameState (GameState): Class from which LevelCompleteState inherits (Base class for all game states)
+    """
+
     def __init__(self, score, player, ai_algorithm, level):
+        self.keyboard_active = False
         self.selected_option = None
 
         self.score = score
@@ -1036,18 +1175,22 @@ class LevelCompleteState(GameState):
                     game.state_manager.pop_state()
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
+                    self.keyboard_active = True
+
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-                elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
-                        self.selected_option = 0
-                    else:
-                        self.selected_option = (self.selected_option + 1) % 3
+
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option == None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 3
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    if self.selected_option == None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option + 1) % 3
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0 and self.level != LEVELS[-1]:
                         game.state_manager.pop_state()
@@ -1089,6 +1232,8 @@ class LevelCompleteState(GameState):
             self.selected_option = 1
         elif self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 2
+        elif not self.keyboard_active:
+            self.selected_option = None
 
         if self.level != LEVELS[-1]:
             next_level_text = font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
