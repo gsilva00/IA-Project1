@@ -5,12 +5,12 @@ import time
 import pygame
 
 from AI.algorithm_registry import get_ai_algorithm, get_ai_algorithm_id
-from AI.algorithms import (AIAlgorithm, BFSAlgorithm, DFSAlgorithm, GreedySearchAlgorithm, IterDeepAlgorithm, 
+from AI.algorithms import (AIAlgorithm, BFSAlgorithm, DFSAlgorithm, GreedySearchAlgorithm, IterDeepAlgorithm,
                            UniformCostAlgorithm, AStarAlgorithm, WeightedAStarAlgorithm)
 from game_data import GameData
 from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND, AI_RUNNING, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE,
                                   DFS, FONT_HINT_SIZE, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GRAY, GREEDY, GRID_OFFSET_Y, HINT_ICON_PATH,
-                                  INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVELS, ORANGE, PLAYER,
+                                  INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVELS, ORANGE, HUMAN,
                                   SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, GAME_ICON_MENU_PATH)
 from game_logic.rules import clear_full_lines, is_valid_position, no_more_valid_moves, place_piece
 from utils.ui import draw_board, draw_piece, draw_score
@@ -220,7 +220,7 @@ class SelectPlayerState(GameState):
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.player_rect.collidepoint(event.pos):
-                    game.state_manager.push_state(SelectAIAlgorithmState(PLAYER))
+                    game.state_manager.push_state(SelectAIAlgorithmState(HUMAN))
                 elif self.ai_rect.collidepoint(event.pos):
                     game.state_manager.push_state(SelectAIAlgorithmState(AI))
                 elif self.back_rect.collidepoint(event.pos):
@@ -245,7 +245,7 @@ class SelectPlayerState(GameState):
                         self.selected_option = (self.selected_option + 1) % 3
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
-                        game.state_manager.push_state(SelectAIAlgorithmState(PLAYER))
+                        game.state_manager.push_state(SelectAIAlgorithmState(HUMAN))
                     elif self.selected_option == 1:
                         game.state_manager.push_state(SelectAIAlgorithmState(AI))
                     elif self.selected_option == 2:
@@ -744,7 +744,7 @@ class GameplayState(GameState):
         print("Starting Gameplay")
 
     def update(self, game, events):
-        if self.player == PLAYER:
+        if self.player == HUMAN:
             self.update_player(game, events)
         else:
             # No need to check for events (hopefully)
@@ -834,7 +834,7 @@ class GameplayState(GameState):
                     break
 
     def render(self, game):
-        if self.player == PLAYER:
+        if self.player == HUMAN:
             self.render_player(game)
         else:
             self.render_ai(game)

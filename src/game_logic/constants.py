@@ -76,7 +76,7 @@ PIECES = [
 ]
 
 # For player type
-PLAYER = 0
+HUMAN = 0
 AI = 1
 
 # For AI algorithm type

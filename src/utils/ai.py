@@ -32,7 +32,6 @@ def child_states(game_data):
                             num += 1
                             new_states.append(new_data)
 
-    print(f"Generated {num} new states")
     return new_states
 
 def goal_state(game_data):
