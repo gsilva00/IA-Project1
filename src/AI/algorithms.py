@@ -37,16 +37,20 @@ def measure_stats(func):
 
 
 class TreeNode:
-    def __init__(self, state, parent=None):
+    def __init__(self, state, parent=None, path_cost=0, depth=0):
         """Initializes a new TreeNode object.
         Args:
             state (GameData): The state of the game (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
             parent (TreeNode, optional): The parent node of the current node. Defaults to None.
+            path_cost (int, optional): The cost to reach the current node from the root node. Defaults to 0.
+            depth (int, optional): The depth of the current node in the search tree. Defaults to 0.
         """
 
         self.state = state
         self.parent = parent
         self.children = []
+        self.path_cost = 0
+        self.depth = 0
 
     def add_child(self, child_node):
         """Adds a child node to the current node. Also sets the parent of the child node to the current node.
@@ -56,7 +60,7 @@ class TreeNode:
         """
 
         self.children.append(child_node)
-        child_node.parent = self
+        child_node.parent = self    # Constructor can already do this, it's partially redundant but that's okay
 
 class AIAlgorithm:
     def __init__(self, level):
@@ -231,7 +235,7 @@ class BFSAlgorithm(AIAlgorithm):
 
             for child_state in self.operators_func(node.state):
                 if child_state not in visited:
-                    child_node = TreeNode(child_state, node) # Already assigns the parent, so add_child is partially redundant but that's okay
+                    child_node = TreeNode(child_state, node, node.path_cost + 1, node.depth + 1)
                     node.add_child(child_node)
 
                     queue.append(child_node)
@@ -271,7 +275,7 @@ class DFSAlgorithm(AIAlgorithm):
 
                 for child_state in self.operators_func(node.state):
                     if child_state not in visited:
-                        child_node = TreeNode(child_state, node) # Already assigns the parent, so add_child is partially redundant but that's okay
+                        child_node = TreeNode(child_state, node, node.path_cost + 1, node.depth + 1)
                         node.add_child(child_node)
 
                         stack.append(child_node)
