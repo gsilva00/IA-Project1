@@ -1,40 +1,18 @@
+import time
+import tracemalloc
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
-import time
+
 from AI.algorithm_registry import AIAlgorithmRegistry
-from game_logic.constants import A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS, GREEDY, GRID_SIZE, INFINITE, ITER_DEEP, HUMAN, UNIFORM_COST, WEIGHTED_A_STAR
+from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
+                                  GREEDY, GRID_SIZE, INFINITE, ITER_DEEP,
+                                  UNIFORM_COST, WEIGHTED_A_STAR)
 from utils.ai import child_states, goal_state, num_states
-from utils.file import save_to_file
+from utils.file import stats_to_file
 
 
 # For running AI algorithms in parallel
 executor = ThreadPoolExecutor(max_workers=1)
-
-def measure_stats(func):
-    """Decorator to measure the elapsed time of a function.
-
-    """
-
-    def wrapper(self, *args, **kwargs):
-        print(f"Called {func.__name__} from the class: {self.__class__.__name__} and we're measuring the elapsed time")
-        start_time = time.time()
-
-        result = func(self, *args, **kwargs)
-
-        if result is not None:
-            elapsed_time = time.time() - start_time
-            print(f"Elapsed time for {func.__name__}: {elapsed_time:.4f} seconds")
-            print(f"Number of states generated: {num_states}")
-
-            save_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, num_states)
-        else:
-            print(f"Elapsed time for {func.__name__}: NOT FINISHED")
-
-        print(f"Finished {func.__name__} from the class: {self.__class__.__name__}")
-        return result
-
-    return wrapper
-
 
 class TreeNode:
     def __init__(self, state, parent=None, path_cost=0, depth=0):
@@ -49,8 +27,8 @@ class TreeNode:
         self.state = state
         self.parent = parent
         self.children = []
-        self.path_cost = 0
-        self.depth = 0
+        self.path_cost = path_cost
+        self.depth = depth
 
     def add_child(self, child_node):
         """Adds a child node to the current node. Also sets the parent of the child node to the current node.
@@ -75,8 +53,7 @@ class AIAlgorithm:
         self.callback = None
         self.result = None
 
-        print("Called constructor of the base class AIAlgorithm")
-        print("The type of the constructed object is:", type(self))
+        print(f"[AIAlgorithm] Initialized: {type(self).__name__}")
 
     def stop(self):
         """Stop the AI algorithm execution.
@@ -85,15 +62,15 @@ class AIAlgorithm:
         """
 
         self.stop_flag = True
-        self.future.cancel()
-        self.future = None
+        if self.future:
+            self.future.cancel()
+            self.future = None
         self.callback = None
         self.result = None
 
     def get_next_move(self, game_data, callback=None, reset=False):
-        """Get the AI algorithm running to find the next move to play.
-
-        The AI algorithm will run in the background and call the callback function with the result when it's done.
+        """Start running the AI algorithm in the background (separate thread)
+        Calls the callback function with the result when it's done.
 
         Args:
             game_data (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
@@ -111,19 +88,19 @@ class AIAlgorithm:
             self.future = None
             self.next_state = None
 
-        # Needed in run_algorithm() - when the algorithm is actually run (not every time get_next_move() is called)
+        # Needed in _execute_algorithm() - when the algorithm is actually run (not every time get_next_move() is called)
         self.current_state = game_data
 
         # No results yet/anymore, so run the algorithm (again)
         if self.result is None:
             if self.future is None:
-                print("Running the algorithm")
+                print(f"[{type(self).__name__}] Running algorithm...")
                 self.future = executor.submit(self.run_algorithm)
                 self.future.add_done_callback(self._on_algorithm_done)
             else:
-                print("Algorithm already running")
+                print(f"[{type(self).__name__}] Algorithm already running.")
         else:
-            print("Algorithm already ran, so the callback function should have been called already and the result should be stored and ready to be used")
+            print(f"[{type(self).__name__}] Algorithm already ran, so the callback function should have been called already and the result should be stored and ready to be used")
 
     def _on_algorithm_done(self, future):
         """Callback function for when the algorithm has finished running.
@@ -167,7 +144,7 @@ class AIAlgorithm:
                 played_piece = piece
                 break
         if not played_piece:
-            return None, None # No piece found
+            return None, None  # No piece found
 
         # Search top-left to bottom-right for position of played piece, stops at first difference found
         # (matches the way the pieces are stored/interpreted/displayed - top-left square is (0, 0))
@@ -175,20 +152,55 @@ class AIAlgorithm:
             for j in range(GRID_SIZE):
                 if self.current_state.board[i][j] != self.next_state.board[i][j]:
                     return played_piece, (i, j)
-        return None, None # No position found
+        return None, None  # No position found
 
-    @measure_stats
+
     def run_algorithm(self):
-        """Run the AI algorithm
+        """Decorator function to run the AI algorithm and measure its performance (time, memory, states visited).
+        Calls the actual implementation of the algorithm.
 
         Returns:
-            TreeNode: The node containing the next state of the game.
+            List[TreeNode]: The list of nodes from the root (exclusive) to the goal state (inclusive).
+
         """
 
-        return NotImplementedError("This method should be overridden by subclasses")
+        print(f"[{type(self).__name__}] Running algorithm...")
+        start_time = time.time()
+        tracemalloc.start()
+
+        snapshot_before = tracemalloc.take_snapshot()
+
+        result = self._execute_algorithm()  # Call the actual implementation
+
+        snapshot_after = tracemalloc.take_snapshot()
+
+        elapsed_time = time.time() - start_time
+        tracemalloc.stop()
+
+        stats = snapshot_after.compare_to(snapshot_before, 'lineno')
+        peak_mem = sum(stat.size_diff for stat in stats)
+        if result is not None:
+            print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
+            print(f"[{type(self).__name__}] Memory: {peak_mem / (1024 * 1024):.4f} MB")
+            print(f"[{type(self).__name__}] States: {num_states}")
+            stats_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, peak_mem, num_states)
+        else:
+            print(f"[{type(self).__name__}] Algorithm did not complete.")
+
+        return result
+
+    def _execute_algorithm(self):
+        """Run the actual AI algorithm
+
+        Returns:
+            List[TreeNode]: The list of nodes from the root (exclusive) to the goal state (inclusive).
+
+        """
+
+        raise NotImplementedError(f"{type(self).__name__} must override _execute_algorithm()")
 
     def order_nodes(self, node):
-        """Order the resulting nodes from the search tree in a way that the first node is the one next state to reach that leads to the goal state.
+        """Sort nodes to trace back the path from root to goal.
 
         Args:
             node (TreeNode): The node containing the goal state or the next state, depending on the algorithm.
@@ -215,8 +227,7 @@ class BFSAlgorithm(AIAlgorithm):
 
     """
 
-    @measure_stats
-    def run_algorithm(self):
+    def _execute_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
         queue = deque([root])                # Store the nodes
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
@@ -224,14 +235,12 @@ class BFSAlgorithm(AIAlgorithm):
         while queue:
             if self.stop_flag:
                 print("Algorithm stopped early")
-                self.result = None
-                return
+                return None
 
             node = queue.popleft()
 
             if self.goal_state_func(node.state):
-                self.result = self.order_nodes(node)
-                return
+                return self.order_nodes(node)
 
             for child_state in self.operators_func(node.state):
                 if child_state not in visited:
@@ -239,10 +248,9 @@ class BFSAlgorithm(AIAlgorithm):
                     node.add_child(child_node)
 
                     queue.append(child_node)
-                    visited.add(child_node.state)
+                    visited.add(child_state)
 
-        self.result = None  # No valid moves found
-        return self.result
+        return None # No valid moves found
 
 class DFSAlgorithm(AIAlgorithm):
     """Implements the Depth-First Search algorithm (DFS) for the AI to find the next move to play.
@@ -253,8 +261,7 @@ class DFSAlgorithm(AIAlgorithm):
 
     """
 
-    @measure_stats
-    def run_algorithm(self):
+    def _execute_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
         stack = [root]                       # Store the nodes
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
@@ -262,16 +269,14 @@ class DFSAlgorithm(AIAlgorithm):
         while stack:
             if self.stop_flag:  # Check stop flag
                 print("Algorithm stopped early")
-                self.result = None
-                return
+                return None
 
             node = stack.pop()
             if node.state not in visited:
                 visited.add(node.state)
 
                 if self.goal_state_func(node.state):
-                    self.result = self.order_nodes(node)
-                    return
+                    return self.order_nodes(node)
 
                 for child_state in self.operators_func(node.state):
                     if child_state not in visited:
@@ -280,36 +285,30 @@ class DFSAlgorithm(AIAlgorithm):
 
                         stack.append(child_node)
 
-        self.result = None  # No valid moves found
-        return self.result
+        return None  # No valid moves found
 
 class IterDeepAlgorithm(AIAlgorithm):
-    @measure_stats
-    def run_algorithm(self):
+    def _execute_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 
 class UniformCostAlgorithm(AIAlgorithm):
-    @measure_stats
-    def run_algorithm(self):
+    def _execute_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 
 class GreedySearchAlgorithm(AIAlgorithm):
-    @measure_stats
-    def run_algorithm(self):
+    def _execute_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 
 class AStarAlgorithm(AIAlgorithm):
-    @measure_stats
-    def run_algorithm(self):
+    def _execute_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 
 class WeightedAStarAlgorithm(AIAlgorithm):
-    @measure_stats
-    def run_algorithm(self):
+    def _execute_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 

@@ -1,4 +1,6 @@
-from game_logic.rules import check_full_lines, is_valid_position, no_more_valid_moves, place_piece
+from game_logic.rules import (check_full_lines, is_valid_position,
+                              no_more_valid_moves, place_piece)
+
 
 def greedy_heuristic(board, piece, position, game_data):
     score = 0

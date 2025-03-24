@@ -1,6 +1,9 @@
 import pygame
 
-from game_logic.constants import CELL_SIZE, DARK_WOOD_PATH, FONT_PATH, FONT_TEXT_SMALL_SIZE, GRAY, GRID_OFFSET_X, GRID_OFFSET_Y, GRID_SIZE, LIGHT_WOOD_PATH, RED_WOOD_PATH, WHITE, WOOD_PATH
+from game_logic.constants import (CELL_SIZE, DARK_WOOD_PATH, FONT_PATH,
+                                  FONT_TEXT_SMALL_SIZE, GRAY, GRID_OFFSET_X,
+                                  GRID_OFFSET_Y, GRID_SIZE, LIGHT_WOOD_PATH,
+                                  RED_WOOD_PATH, WHITE, WOOD_PATH)
 
 
 def draw_board(screen, board):

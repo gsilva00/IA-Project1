@@ -1,6 +1,8 @@
 import copy
+
 from game_logic.constants import GRID_SIZE
 from game_logic.rules import clear_full_lines, is_valid_position, place_piece
+
 
 # Keep track of the number of states generated
 num_states = 0

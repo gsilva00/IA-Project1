@@ -1,8 +1,10 @@
 import sys
+
 import pygame
 
 from states import GameStateManager, MainMenuState
 from utils.misc import QuitGameException
+
 
 class Game:
     """Main game class.
