@@ -2,15 +2,15 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 import time
 from AI.algorithm_registry import AIAlgorithmRegistry
-from game_logic.constants import A_STAR, AI_FOUND, AI_NOT_FOUND, AI_RUNNING, BFS, DFS, GREEDY, GRID_SIZE, INFINITE, ITER_DEEP, HUMAN, UNIFORM_COST, WEIGHTED_A_STAR
-from utils.ai import child_states, goal_state
+from game_logic.constants import A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS, GREEDY, GRID_SIZE, INFINITE, ITER_DEEP, HUMAN, UNIFORM_COST, WEIGHTED_A_STAR
+from utils.ai import child_states, goal_state, num_states
 from utils.file import save_to_file
 
 
 # For running AI algorithms in parallel
 executor = ThreadPoolExecutor(max_workers=1)
 
-def measure_time(func):
+def measure_stats(func):
     """Decorator to measure the elapsed time of a function.
 
     """
@@ -24,8 +24,9 @@ def measure_time(func):
         if result is not None:
             elapsed_time = time.time() - start_time
             print(f"Elapsed time for {func.__name__}: {elapsed_time:.4f} seconds")
+            print(f"Number of states generated: {num_states}")
 
-            save_to_file(f"{self.__class__.__name__}_elapsed_time.csv", elapsed_time)
+            save_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, num_states)
         else:
             print(f"Elapsed time for {func.__name__}: NOT FINISHED")
 
@@ -172,7 +173,7 @@ class AIAlgorithm:
                     return played_piece, (i, j)
         return None, None # No position found
 
-    @measure_time
+    @measure_stats
     def run_algorithm(self):
         """Run the AI algorithm
 
@@ -203,14 +204,21 @@ class AIAlgorithm:
         return nodes
 
 class BFSAlgorithm(AIAlgorithm):
-    @measure_time
+    """Implements the Breadth-First Search algorithm (BFS) for the AI to find the next move to play.
+
+    Args:
+        AIAlgorithm (AIAlgorithm): Class from which BFSAlgorithm inherits (Base class for all AI algorithms).
+
+    """
+
+    @measure_stats
     def run_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
         queue = deque([root])                # Store the nodes
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
 
         while queue:
-            if self.stop_flag:  # Check stop flag
+            if self.stop_flag:
                 print("Algorithm stopped early")
                 self.result = None
                 return
@@ -225,43 +233,78 @@ class BFSAlgorithm(AIAlgorithm):
                 if child_state not in visited:
                     child_node = TreeNode(child_state, node) # Already assigns the parent, so add_child is partially redundant but that's okay
                     node.add_child(child_node)
+
                     queue.append(child_node)
+                    visited.add(child_node.state)
 
         self.result = None  # No valid moves found
         return self.result
 
 class DFSAlgorithm(AIAlgorithm):
-    @measure_time
-    def run_algorithm(self):
+    """Implements the Depth-First Search algorithm (DFS) for the AI to find the next move to play.
+    It uses the iterative version of the algorithm, which is more efficient than the recursive version, especially for large search trees.
 
-        raise NotImplementedError("Not implemented yet")
+    Args:
+        AIAlgorithm (AIAlgorithm): Class from which DFSAlgorithm inherits (Base class for all AI algorithms).
+
+    """
+
+    @measure_stats
+    def run_algorithm(self):
+        root = TreeNode(self.current_state)  # Root node in the search tree
+        stack = [root]                       # Store the nodes
+        visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
+
+        while stack:
+            if self.stop_flag:  # Check stop flag
+                print("Algorithm stopped early")
+                self.result = None
+                return
+
+            node = stack.pop()
+            if node.state not in visited:
+                visited.add(node.state)
+
+                if self.goal_state_func(node.state):
+                    self.result = self.order_nodes(node)
+                    return
+
+                for child_state in self.operators_func(node.state):
+                    if child_state not in visited:
+                        child_node = TreeNode(child_state, node) # Already assigns the parent, so add_child is partially redundant but that's okay
+                        node.add_child(child_node)
+
+                        stack.append(child_node)
+
+        self.result = None  # No valid moves found
+        return self.result
 
 class IterDeepAlgorithm(AIAlgorithm):
-    @measure_time
+    @measure_stats
     def run_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 
 class UniformCostAlgorithm(AIAlgorithm):
-    @measure_time
+    @measure_stats
     def run_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 
 class GreedySearchAlgorithm(AIAlgorithm):
-    @measure_time
+    @measure_stats
     def run_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 
 class AStarAlgorithm(AIAlgorithm):
-    @measure_time
+    @measure_stats
     def run_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")
 
 class WeightedAStarAlgorithm(AIAlgorithm):
-    @measure_time
+    @measure_stats
     def run_algorithm(self):
 
         raise NotImplementedError("Not implemented yet")

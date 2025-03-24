@@ -17,7 +17,6 @@ class GameData:
 
         """
 
-        print("Getting more playable pieces")
         if not any(self.pieces):
             if not self.following_pieces:
                 self.pieces = []

@@ -8,7 +8,7 @@ from AI.algorithm_registry import get_ai_algorithm, get_ai_algorithm_id
 from AI.algorithms import (AIAlgorithm, BFSAlgorithm, DFSAlgorithm, GreedySearchAlgorithm, IterDeepAlgorithm,
                            UniformCostAlgorithm, AStarAlgorithm, WeightedAStarAlgorithm)
 from game_data import GameData
-from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND, AI_RUNNING, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE,
+from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND, BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH, BFS, BROWN, CELL_SIZE,
                                   DFS, FONT_HINT_SIZE, FONT_PATH, FONT_TEXT_SIZE, FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE, GRAY, GREEDY, GRID_OFFSET_Y, HINT_ICON_PATH,
                                   INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVELS, ORANGE, HUMAN,
                                   SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, GAME_ICON_MENU_PATH)
@@ -931,6 +931,9 @@ class GameplayState(GameState):
                 # Don't know when this will happen, but just in case
                 self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
                 self.ai_running_start_time = time.time()
+        else:
+            # Do nothing, the AI is still running
+            pass
 
     def render(self, game):
         if self.player == HUMAN:
@@ -1024,6 +1027,7 @@ class GameplayState(GameState):
 
                 draw_piece(game.screen, self.selected_piece, self.ai_current_pos, True)
 
+        # The AI is running, show the time elapsed
         if self.ai_running_start_time is not None:
             elapsed_time = time.time() - self.ai_running_start_time
             elapsed_time_text = font.render(f'Time Elapsed: {elapsed_time:.3f} seconds', True, WHITE)

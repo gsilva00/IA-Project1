@@ -3,7 +3,7 @@ import csv
 from datetime import datetime
 from game_logic.constants import _BASE_PATH
 
-def save_to_file(filename, data):
+def save_to_file(filename, elapsed_time, states_generated):
     full_path = os.path.join(_BASE_PATH, 'data', filename)
     os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
@@ -12,6 +12,6 @@ def save_to_file(filename, data):
         writer = csv.writer(file)
 
         if not file_exists:
-            writer.writerow(['Timestamp', 'Elapsed Time'])
+            writer.writerow(['Timestamp', 'Elapsed Time', 'States Generated'])
 
-        writer.writerow([datetime.now().isoformat(), data])
+        writer.writerow([datetime.now().isoformat(), elapsed_time, states_generated])
