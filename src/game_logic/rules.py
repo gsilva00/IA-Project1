@@ -7,7 +7,7 @@ def generate_pieces():
     """Generates list of lists with a total of 99 random pieces.
 
     Returns:
-        List[List[int]]: List of 99 pieces, each piece is a list of pairs (x, y), each pair represents a block in the piece.
+        List[List[int]]: List of 99 pieces (divided in lists of 3), each piece is a list of pairs (x, y), each pair represents a block in the piece.
     """
 
     return [[random.choice(PIECES) for _ in range(3)] for _ in range(33)]

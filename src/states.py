@@ -13,11 +13,13 @@ from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND, AI_RUNNING
                                   INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2, LEVEL_3, LEVELS, ORANGE, HUMAN,
                                   SCREEN_HEIGHT, SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR, WHITE, GAME_ICON_MENU_PATH)
 from game_logic.rules import clear_full_lines, is_valid_position, no_more_valid_moves, place_piece
+from utils.misc import QuitGameException
 from utils.ui import draw_board, draw_piece, draw_score
 
 
 class GameStateManager:
     """Manages the game states' stack
+
     """
 
     def __init__(self):
@@ -30,8 +32,7 @@ class GameStateManager:
             new_state (GameState): The new state to switch to
         """
 
-        while self.state_stack:
-            self.state_stack.pop().exit(self)
+        self.clear_states()
         new_state.enter(self)
         self.state_stack = [new_state]
 
@@ -63,6 +64,18 @@ class GameStateManager:
             return True
         return False
 
+    def peek_state(self):
+        """Get the state at the top of the stack
+
+        Returns:
+            GameState: The state at the top of the stack
+        """
+
+        if self.state_stack:
+            print("The peeked state is:", self.state_stack[-1])
+            return self.state_stack[-1]
+        return None
+
     def subst_below_switch_to(self, new_state):
         """Switch to a new state and remove the previous state
 
@@ -79,6 +92,14 @@ class GameStateManager:
             new_state.enter(self)
             return True
         return False
+
+    def clear_states(self):
+        """Clear all states
+
+        """
+
+        while self.state_stack:
+            self.state_stack.pop().exit(self)
 
     @property
     def current_state(self):
@@ -101,6 +122,7 @@ class GameState:
 
     def enter(self, game):
         """Called when the game state is entered
+        Used for debugging, possible transition effects and other initializations separate from the constructor
 
         Args:
             game (Game): The Game object
@@ -126,6 +148,7 @@ class GameState:
 
     def exit(self, game):
         """Called when the game state is exited
+        Used for debugging, possible transition effects and other clean-up operations
 
         Args:
             game (Game): The Game object
@@ -151,8 +174,7 @@ class MainMenuState(GameState):
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
-                pygame.quit()
-                sys.exit()
+                raise QuitGameException()
             elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN:
                 game.state_manager.push_state(SelectPlayerState())
 
@@ -215,8 +237,7 @@ class SelectPlayerState(GameState):
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
-                pygame.quit()
-                sys.exit()
+                raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.player_rect.collidepoint(event.pos):
@@ -335,8 +356,7 @@ class SelectAIAlgorithmState(GameState):
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
-                pygame.quit()
-                sys.exit()
+                raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.bfs_rect.collidepoint(event.pos):
@@ -500,8 +520,7 @@ class SelectModeState(GameState):
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
-                pygame.quit()
-                sys.exit()
+                raise QuitGameException()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.levels_rect.collidepoint(event.pos):
                     game.state_manager.push_state(SelectLevelState(self.player, self.ai_algorithm))
@@ -612,8 +631,7 @@ class SelectLevelState(GameState):
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
-                pygame.quit()
-                sys.exit()
+                raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.level_1_rect.collidepoint(event.pos):
@@ -719,6 +737,7 @@ class GameplayState(GameState):
     """
 
     def __init__(self, player, ai_algorithm, level=INFINITE):
+        print("GameplayState constructor called")
         self.player = player
         self.ai_algorithm = get_ai_algorithm(ai_algorithm, level)
         self.level = level
@@ -728,33 +747,65 @@ class GameplayState(GameState):
         self.selected_index = None
         self.selected_piece = None
 
-        # Start running the AI algorithm ASAP
-        self.ai_algorithm.get_next_move(self.game_data)
+        self.hint_button = None
+        self.hint_pressed = False
         self.ai_hint_index = None
         self.ai_hint_position = None
-        self.ai_running_start_time = None
 
         self.ai_initial_pos = None
         self.ai_current_pos = None
         self.ai_target_pos = None
 
-        self.hint_button = None
+    def on_ai_move_done(self, status, piece_index, piece_position):
+        """Callback function for AI algorithm to notify/update state when it has found a move
+
+        Args:
+            status (int): Status of the AI algorithm (AI_FOUND or AI_NOT_FOUND)
+            piece_index (int): Index of the piece in the game_data.pieces list
+            piece_position (Tuple[int, int]): Position where the piece should be placed
+        """
+
+        if status == AI_FOUND:
+            print("AI found a move")
+            self.ai_running_start_time = None
+
+            if self.player == HUMAN:
+                self.ai_hint_index = piece_index
+                self.ai_hint_position = piece_position
+            else:
+                self.selected_index = piece_index
+                self.selected_piece = self.game_data.pieces[self.selected_index]
+                self.game_data.pieces[self.selected_index] = None
+                self.ai_target_pos = piece_position
+
+                for i, piece in enumerate(self.game_data.pieces):
+                    if piece == self.selected_piece:
+                        self.ai_initial_pos = (i * 5 + 2, 10)
+                        self.ai_current_pos = self.ai_initial_pos
+                        break
+
+        elif status == AI_NOT_FOUND:
+            print("AI didn't find a move")
+            self.ai_running_start_time = None
 
     def enter(self, game):
         print("Starting Gameplay")
+
+        # Start running the AI algorithm AS SOON AS WE ENTER THE GAMEPLAY STATE
+        self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
+        self.ai_running_start_time = time.time()
 
     def update(self, game, events):
         if self.player == HUMAN:
             self.update_player(game, events)
         else:
-            # No need to check for events (hopefully)
-            self.update_ai(game)
+            self.update_ai(game, events)
 
     def update_player(self, game, events):
         for event in events:
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                self.ai_algorithm.stop()
+                raise QuitGameException()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.selected_piece is None:
@@ -771,6 +822,10 @@ class GameplayState(GameState):
                                 self.game_data.pieces[i] = None
                                 break
 
+                    # Mouse wasn't on any piece, check if hint button was pressed
+                    if self.selected_piece is None and self.hint_button.collidepoint(mx, my):
+                        self.hint_pressed = True
+
             elif event.type == pygame.MOUSEBUTTONUP:
                 if self.selected_piece is not None:
                     mx, my = pygame.mouse.get_pos()
@@ -785,12 +840,23 @@ class GameplayState(GameState):
                             self.score += target_blocks_cleared
 
                             if self.game_data.blocks_to_break <= 0:
+                                self.ai_algorithm.stop()
                                 game.state_manager.push_state(LevelCompleteState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
                         else:
                             self.score += lines_cleared
 
-                        # Clear the hint
+                        # Player made move, state changed, prepare next hint
+                        if self.ai_running_start_time is None and self.selected_index == self.ai_hint_index and px-4 == self.ai_hint_position[0] and py == self.ai_hint_position[1]:
+                            # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
+                            self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
+                            self.ai_running_start_time = time.time()
+                        elif self.ai_running_start_time is None and (self.selected_index != self.ai_hint_index or px-4 != self.ai_hint_position[0] or py != self.ai_hint_position[1]):
+                            # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
+                            self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done, True)
+                            self.ai_running_start_time = time.time()
+                        # Clear the current hint
+                        self.hint_pressed = False
                         self.ai_hint_index = None
                         self.ai_hint_position = None
 
@@ -799,6 +865,7 @@ class GameplayState(GameState):
                             self.game_data.getMorePlayablePieces()
 
                         if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
+                            self.ai_algorithm.stop()
                             game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
                     else:
                         # Restore visibility if not placed
@@ -811,27 +878,59 @@ class GameplayState(GameState):
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
+                    # Stop the AI algorithm running in the background (if it is)
                     game.state_manager.push_state(PauseState())
 
                 if event.key == pygame.K_h:
-                    _status, (self.ai_hint_index, self.ai_hint_position) = self.ai_algorithm.get_next_move(self.game_data)
+                    # Callback function will handle assigning the AI's move to the corresponding variables
+                    # Check how those variables are used in the events above
+                    self.hint_pressed = True
 
-    def update_ai(self, game):
-        status, (piece_index, piece_position) = self.ai_algorithm.get_next_move(self.game_data)
-        if status == AI_RUNNING:
-            if self.ai_running_start_time is None:
+    def update_ai(self, game, events):
+        for event in events:
+            if event.type == pygame.QUIT:
+                self.ai_algorithm.stop()
+                raise QuitGameException()
+
+        # Callback function will handle assigning the AI's move to the corresponding variables
+
+        # If algorithm isn't running (finished), handle its move
+        if self.ai_running_start_time is None:
+            if self.ai_selected_piece is not None:
+                # If the algorithm found a move, handle it
+                if self.ai_current_pos == self.ai_target_pos:
+                    place_piece(self.game_data.board, self.ai_selected_piece, self.ai_target_pos)
+                    lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
+
+                    # Levels mode
+                    if self.level != INFINITE:
+                        self.game_data.blocks_to_break -= target_blocks_cleared
+                        self.score += target_blocks_cleared
+
+                        if self.game_data.blocks_to_break <= 0:
+                            self.ai_algorithm.stop()
+                            game.state_manager.push_state(LevelCompleteState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
+
+                    else:
+                        self.score += lines_cleared
+
+                    # All pieces placed (all None), generate new ones
+                    if not any(self.game_data.pieces):
+                        self.game_data.getMorePlayablePieces()
+
+                    if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
+                        self.ai_algorithm.stop()
+                        game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
+
+                    self.ai_selected_piece = None
+                    self.ai_initial_pos = None
+                    self.ai_current_pos = None
+                    self.ai_target_pos = None
+            else:
+                # If the algorithm didn't find a move, get the next one
+                # Don't know when this will happen, but just in case
+                self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
                 self.ai_running_start_time = time.time()
-        elif status == AI_NOT_FOUND:
-            self.ai_running_start_time = None
-        elif status == AI_FOUND:
-            self.ai_running_start_time = None
-
-            self.selected_piece = self.game_data.pieces[self.selected_index]
-            for i, piece in enumerate(self.game_data.pieces):
-                if piece == self.selected_piece:
-                    self.ai_initial_pos = (i * 5 + 2, 10)
-                    self.ai_current_pos = self.ai_initial_pos
-                    break
 
     def render(self, game):
         if self.player == HUMAN:
@@ -850,7 +949,7 @@ class GameplayState(GameState):
         game.screen.blit(background, (0, 0))
 
         # Draw the hint piece
-        if self.ai_hint_index is not None and self.ai_hint_position is not None:
+        if self.ai_hint_index is not None and self.ai_hint_position is not None and self.hint_pressed:
             board = copy.deepcopy(self.game_data.board)
             piece = self.game_data.pieces[self.ai_hint_index]
             place_piece(board, piece, self.ai_hint_position)
@@ -923,7 +1022,7 @@ class GameplayState(GameState):
 
                     self.ai_current_pos = (cx + step_x, cy + step_y)
 
-                draw_piece(game.screen, self.selected_piece, self.ai_current_pos, True, 0)
+                draw_piece(game.screen, self.selected_piece, self.ai_current_pos, True)
 
         if self.ai_running_start_time is not None:
             elapsed_time = time.time() - self.ai_running_start_time
@@ -941,6 +1040,10 @@ class GameplayState(GameState):
 
     def exit(self, game):
         print("Exiting Gameplay")
+
+        # Stop the AI algorithm running in the background
+        # This way, it also stops when the game is paused (which is kind of a waste of time)
+        # self.ai_algorithm.stop()
 
 class PauseState(GameState):
     """Pause menu
@@ -962,8 +1065,7 @@ class PauseState(GameState):
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
-                pygame.quit()
-                sys.exit()
+                raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.resume_rect.collidepoint(event.pos):
@@ -1037,7 +1139,7 @@ class GameOverState(GameState):
     """Game Over menu
 
     Args:
-        GameState (_type_): _description_
+        GameState (GameState): Class from which GameOverState inherits (Base class for all game states)
     """
 
     def __init__(self, player, score, ai_algorithm, level):
@@ -1058,8 +1160,7 @@ class GameOverState(GameState):
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
-                pygame.quit()
-                sys.exit()
+                raise QuitGameException()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.play_again_rect.collidepoint(event.pos):
                     game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
@@ -1158,8 +1259,7 @@ class LevelCompleteState(GameState):
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
-                pygame.quit()
-                sys.exit()
+                raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.next_level_rect.collidepoint(event.pos) and self.level != LEVELS[-1]:

@@ -41,4 +41,5 @@ def goal_state(game_data):
         game_data (GameData): The current game state
     """
 
-    return game_data.blocks_to_break == 0
+    # For when the number of blocks to break is lower than the number of blocks that can be broken
+    return game_data.blocks_to_break <= 0

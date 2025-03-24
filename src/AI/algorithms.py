@@ -21,13 +21,17 @@ def measure_time(func):
 
         result = func(self, *args, **kwargs)
 
-        elapsed_time = time.time() - start_time
-        print(f"Elapsed time for {func.__name__}: {elapsed_time:.4f} seconds")
+        if result is not None:
+            elapsed_time = time.time() - start_time
+            print(f"Elapsed time for {func.__name__}: {elapsed_time:.4f} seconds")
 
-        save_to_file(f"{self.__class__.__name__}_elapsed_time.csv", elapsed_time)
+            save_to_file(f"{self.__class__.__name__}_elapsed_time.csv", elapsed_time)
+        else:
+            print(f"Elapsed time for {func.__name__}: NOT FINISHED")
 
         print(f"Finished {func.__name__} from the class: {self.__class__.__name__}")
         return result
+
     return wrapper
 
 
@@ -63,47 +67,46 @@ class AIAlgorithm:
 
         self.stop_flag = False
         self.future = None
+        self.callback = None
         self.result = None
+
         print("Called constructor of the base class AIAlgorithm")
         print("The type of the constructed object is:", type(self))
 
     def stop(self):
         """Stop the AI algorithm execution.
+        Resets everything related to the algorithm running in the background.
 
         """
 
         self.stop_flag = True
+        self.future.cancel()
+        self.future = None
+        self.callback = None
+        self.result = None
 
-    def get_next_move(self, game_data):
-        """Get the next move or the goal move for the AI.
+    def get_next_move(self, game_data, callback=None, reset=False):
+        """Get the AI algorithm running to find the next move to play.
+
+        The AI algorithm will run in the background and call the callback function with the result when it's done.
 
         Args:
             game_data (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
+            callback (function, optional): The function to call when the algorithm has finished running. Defaults to None.
+            reset (bool, optional): Whether to reset the stored algorithm results. Defaults to False.
 
-        Returns:
-            tuple: The index of the piece to play and the position to play it at. If the move is not ready yet, return None
         """
 
-        def get_next_piece():
-            played_piece = None
+        self.stop_flag = False
+        self.callback = callback
 
-            # Find the piece that was played
-            for piece in self.current_state.pieces:
-                if piece not in self.next_state.pieces:
-                    played_piece = piece
-                    break
-            if not played_piece:
-                return None, None # No piece found
+        # Reset the AI algorithm results (when current state of the game doesn't match stat expected for result of the algorithm to be used)
+        if reset:
+            self.result = None
+            self.future = None
+            self.next_state = None
 
-            # Search top-left to bottom-right for position of played piece
-            # (matches the way the pieces are stored/interpreted/displayed - top-left square is (0, 0))
-            for i in range(GRID_SIZE):
-                for j in range(GRID_SIZE):
-                    if self.current_state.board[i][j] != self.next_state.board[i][j]:
-                        return played_piece, (i, j)
-            return None, None # No position found
-
-        # Needed in run_algorithm() when the algorithm is run (not every time get_next_move() is called)
+        # Needed in run_algorithm() - when the algorithm is actually run (not every time get_next_move() is called)
         self.current_state = game_data
 
         # No results yet/anymore, so run the algorithm (again)
@@ -111,25 +114,63 @@ class AIAlgorithm:
             if self.future is None:
                 print("Running the algorithm")
                 self.future = executor.submit(self.run_algorithm)
-                return AI_RUNNING, (None, None)  # Indicate that the move is not ready yet
-            elif not self.future.done():
-                print("Algorithm is still running")
-                return AI_RUNNING, (None, None)  # Indicate that the move is not ready yet
+                self.future.add_done_callback(self._on_algorithm_done)
             else:
-                print("Algorithm has finished running")
-                self.result = self.future.result()
-                self.future = None
+                print("Algorithm already running")
+        else:
+            print("Algorithm already ran, so the callback function should have been called already and the result should be stored and ready to be used")
+
+    def _on_algorithm_done(self, future):
+        """Callback function for when the algorithm has finished running.
+        Calls the defined callback function if it exists.
+
+        Args:
+            future (Future): The future object that contains the result of the algorithm.
+        """
+
+        self.result = future.result()
+
+        if self.result is None:
+            if self.callback:
+                self.callback(AI_NOT_FOUND, None, None)
+            return
 
         self.next_state = self.result[0]
-        piece_index, piece_position = get_next_piece()
-
+        piece_index, piece_position = self._get_next_piece()
         # Remove the state that is being played from the result (to avoid playing the same move again in the next call)
         self.result = self.result[1:] if len(self.result) > 1 else None
 
         if piece_index is None or piece_position is None:
-            return AI_NOT_FOUND, (None, None)
+            if self.callback:
+                self.callback(AI_NOT_FOUND, None, None)
         else:
-            return AI_FOUND, (piece_index, piece_position)
+            if self.callback:
+                self.callback(AI_FOUND, piece_index, piece_position)
+
+    def _get_next_piece(self):
+        """Get the piece that was played and the position it was played at.
+
+        Returns:
+            Tuple[int, Tuple[int, int]]: The index of the piece to play and the position to play it at.
+        """
+
+        played_piece = None
+
+        # Find the piece that was played
+        for piece in self.current_state.pieces:
+            if piece not in self.next_state.pieces:
+                played_piece = piece
+                break
+        if not played_piece:
+            return None, None # No piece found
+
+        # Search top-left to bottom-right for position of played piece, stops at first difference found
+        # (matches the way the pieces are stored/interpreted/displayed - top-left square is (0, 0))
+        for i in range(GRID_SIZE):
+            for j in range(GRID_SIZE):
+                if self.current_state.board[i][j] != self.next_state.board[i][j]:
+                    return played_piece, (i, j)
+        return None, None # No position found
 
     @measure_time
     def run_algorithm(self):

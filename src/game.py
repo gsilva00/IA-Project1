@@ -1,6 +1,8 @@
+import sys
 import pygame
 
 from states import GameStateManager, MainMenuState
+from utils.misc import QuitGameException
 
 class Game:
     """Main game class.
@@ -28,7 +30,18 @@ class Game:
         self.state_manager.current_state.render(self)
 
     def run(self):
-        while True:
-            self.update()
-            self.render()
-            self.clock.tick(60)
+        try:
+            while True:
+                self.update()
+                self.render()
+                self.clock.tick(30)
+        except QuitGameException:
+            print("Quitting game...")
+            self.state_manager.clear_states()
+            pygame.quit()
+            sys.exit()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            self.state_manager.clear_states()
+            pygame.quit()
+            sys.exit()

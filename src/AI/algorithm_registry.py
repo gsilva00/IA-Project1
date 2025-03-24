@@ -80,6 +80,4 @@ def get_ai_algorithm_id(ai_algorithm):
         int: The identifier of the requested AI algorithm.
     """
 
-    # Stop the AI algorithm execution
-    ai_algorithm.stop()
     return AIAlgorithmRegistry.get_algorithm_id(ai_algorithm)
