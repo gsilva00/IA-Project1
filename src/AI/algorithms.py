@@ -4,7 +4,7 @@ import time
 from AI.algorithm_registry import AIAlgorithmRegistry
 from game_logic.constants import A_STAR, AI_FOUND, AI_NOT_FOUND, AI_RUNNING, BFS, DFS, GREEDY, GRID_SIZE, INFINITE, ITER_DEEP, HUMAN, UNIFORM_COST, WEIGHTED_A_STAR
 from utils.ai import child_states, goal_state
-from utils.measuring import save_to_file
+from utils.file import save_to_file
 
 
 # For running AI algorithms in parallel
