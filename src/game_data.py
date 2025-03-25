@@ -12,6 +12,7 @@ class GameData:
         self.pieces = []
         self.getMorePlayablePieces()
         self.blocks_to_break = copy.deepcopy(LEVEL_BLOCKS[level]) if level != INFINITE else 0
+        self.recent_piece = None
 
     def getMorePlayablePieces(self):
         """Get more pieces to play from the already generated pieces

@@ -841,7 +841,7 @@ class GameplayState(GameState):
                     mx, my = pygame.mouse.get_pos()
                     px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
                     if is_valid_position(self.game_data.board, self.selected_piece, (px-4, py)):
-                        place_piece(self.game_data.board, self.selected_piece, (px-4, py))
+                        place_piece(self.game_data, self.selected_piece, (px-4, py))
                         lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
 
                         # Levels mode
@@ -906,10 +906,10 @@ class GameplayState(GameState):
 
         # If algorithm isn't running (finished), handle its move
         if self.ai_running_start_time is None:
-            if self.ai_selected_piece is not None:
+            if self.selected_piece is not None:
                 # If the algorithm found a move, handle it
                 if self.ai_current_pos == self.ai_target_pos:
-                    place_piece(self.game_data.board, self.ai_selected_piece, self.ai_target_pos)
+                    place_piece(self.game_data, self.selected_piece, self.ai_target_pos)
                     lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
 
                     # Levels mode
@@ -932,7 +932,7 @@ class GameplayState(GameState):
                         self.ai_algorithm.stop()
                         game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
-                    self.ai_selected_piece = None
+                    self.selected_piece = None
                     self.ai_initial_pos = None
                     self.ai_current_pos = None
                     self.ai_target_pos = None
@@ -963,10 +963,10 @@ class GameplayState(GameState):
 
         # Draw the hint piece
         if self.ai_hint_index is not None and self.ai_hint_position is not None and self.hint_pressed:
-            board = copy.deepcopy(self.game_data.board)
+            game_data = copy.deepcopy(self.game_data)
             piece = self.game_data.pieces[self.ai_hint_index]
-            place_piece(board, piece, self.ai_hint_position)
-            draw_board(game.screen, board)
+            place_piece(game_data.board, piece, self.ai_hint_position)
+            draw_board(game.screen, game_data.board)
         else:
             draw_board(game.screen, self.game_data.board)
 
