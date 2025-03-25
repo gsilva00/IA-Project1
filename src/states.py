@@ -53,7 +53,7 @@ class GameStateManager:
             new_state (GameState): The new state to push
         """
 
-        if self.current_state:
+        if self.current_state is not None:
             self.current_state.exit(self)
         self.state_stack.append(new_state)
         print("Pushed state")
@@ -66,10 +66,10 @@ class GameStateManager:
             bool: True if the state was popped, False otherwise
         """
 
-        if self.current_state:
+        if self.current_state is not None:
             self.state_stack.pop().exit(self)
             print("Popped state")
-            if self.current_state:
+            if self.current_state is not None:
                 self.current_state.enter(self)
             return True
         return False
@@ -81,7 +81,7 @@ class GameStateManager:
             GameState: The state at the top of the stack
         """
 
-        if self.state_stack:
+        if self.state_stack != []:
             print("The peeked state is:", self.state_stack[-1])
             return self.state_stack[-1]
         return None
@@ -119,7 +119,7 @@ class GameStateManager:
             GameState: The current state
         """
 
-        if self.state_stack:
+        if self.state_stack != []:
             return self.state_stack[-1]
         return None
 
@@ -802,8 +802,12 @@ class GameplayState(GameState):
         print("Starting Gameplay")
 
         # Start running the AI algorithm AS SOON AS WE ENTER THE GAMEPLAY STATE
-        self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
-        self.ai_running_start_time = time.time()
+        if (
+            (self.player == HUMAN and (not self.ai_hint_index or not self.ai_hint_position)) or
+            (self.player == AI and (not self.ai_initial_pos or not self.ai_current_pos or not self.ai_target_pos))
+        ):
+            self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
+            self.ai_running_start_time = time.time()
 
     def update(self, game, events):
         if self.player == HUMAN:
@@ -937,10 +941,8 @@ class GameplayState(GameState):
                     self.ai_current_pos = None
                     self.ai_target_pos = None
             else:
-                # If the algorithm didn't find a move, get the next one
-                # Don't know when this will happen, but just in case
-                self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
-                self.ai_running_start_time = time.time()
+                # AI didn't find a move
+                game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
         else:
             # Do nothing, the AI is still running
             pass
@@ -975,7 +977,7 @@ class GameplayState(GameState):
 
         # Draw the list of pieces
         for i, piece in enumerate(self.game_data.pieces):
-            if piece != None:
+            if piece is not None:
                 draw_piece(game.screen, piece, (i*5+2, 10), False)
 
         if self.selected_piece is not None:
@@ -1078,13 +1080,18 @@ class PauseState(GameState):
 
     def update(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
+                # Get the GameplayState and stop the AI algorithm
+                game.state_manager.pop_state()
+                game.state_manager.peek_state().ai_algorithm.stop()
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.resume_rect.collidepoint(event.pos):
                     game.state_manager.pop_state()
                 elif self.exit_rect.collidepoint(event.pos):
+                    game.state_manager.pop_state()
+                    game.state_manager.peek_state().ai_algorithm.stop()
                     game.state_manager.switch_to_base_state(MainMenuState())
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
@@ -1094,6 +1101,8 @@ class PauseState(GameState):
                 if event.key in [pygame.K_r, pygame.K_ESCAPE, pygame.K_p]:
                     game.state_manager.pop_state()
                 elif event.key == pygame.K_BACKSPACE:
+                    game.state_manager.pop_state()
+                    game.state_manager.peek_state().ai_algorithm.stop()
                     game.state_manager.switch_to_base_state(MainMenuState())
 
                 elif event.key in [pygame.K_UP, pygame.K_w]:
@@ -1110,6 +1119,8 @@ class PauseState(GameState):
                     if self.selected_option == 0:
                         game.state_manager.pop_state()
                     elif self.selected_option == 1:
+                        game.state_manager.pop_state()
+                        game.state_manager.peek_state().ai_algorithm.stop()
                         game.state_manager.switch_to_base_state(MainMenuState())
 
     def render(self, game):
@@ -1117,8 +1128,8 @@ class PauseState(GameState):
         pause_text = font.render('Pause', True, WHITE)
 
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        resume_text = font.render('Press R to Resume', True, WHITE)
-        exit_text = font.render('Press BACKSPACE to Exit', True, WHITE)
+        resume_text = font.render('Resume', True, WHITE)
+        exit_text = font.render('Quit', True, WHITE)
 
         # Non-interactable rectangles
         pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
@@ -1138,8 +1149,8 @@ class PauseState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-        resume_text = font.render('Press R to Resume', True, ORANGE if self.selected_option == 0 else WHITE)
-        exit_text = font.render('Press ESC to Exit', True, ORANGE if self.selected_option == 1 else WHITE)
+        resume_text = font.render('Resume', True, ORANGE if self.selected_option == 0 else WHITE)
+        exit_text = font.render('Quit', True, ORANGE if self.selected_option == 1 else WHITE)
 
         game.screen.blit(pause_text, pause_rect)
         game.screen.blit(resume_text, self.resume_rect)

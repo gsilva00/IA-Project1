@@ -62,7 +62,7 @@ class AIAlgorithm:
         """
 
         self.stop_flag = True
-        if self.future:
+        if self.future is not None:
             self.future.cancel()
             self.future = None
         self.callback = None
@@ -100,7 +100,11 @@ class AIAlgorithm:
             else:
                 print(f"[{type(self).__name__}] Algorithm already running.")
         else:
-            print(f"[{type(self).__name__}] Algorithm already ran, so the callback function should have been called already and the result should be stored and ready to be used")
+            print(f"[{type(self).__name__}] Using stored result.")
+            piece_index, piece_position = self._process_result()
+            status = AI_FOUND if piece_index is None or piece_position is None else AI_NOT_FOUND
+            if self.callback is not None:
+                self.callback(status, piece_index, piece_position)
 
     def _on_algorithm_done(self, future):
         """Callback function for when the algorithm has finished running.
@@ -113,47 +117,22 @@ class AIAlgorithm:
         self.result = future.result()
 
         if self.result is None:
-            if self.callback:
+            if self.callback is not None:
                 self.callback(AI_NOT_FOUND, None, None)
             return
 
-        self.next_state = self.result[0]
-        piece_index, piece_position = self._get_next_piece()
+        piece_index, piece_position = self._process_result()
+        status = AI_FOUND if piece_index is not None and piece_position is not None else AI_NOT_FOUND
+
+        if self.callback is not None:
+            self.callback(status, piece_index, piece_position)
+
+    def _process_result(self):
+        self.next_state = self.result[0].state
         # Remove the state that is being played from the result (to avoid playing the same move again in the next call)
         self.result = self.result[1:] if len(self.result) > 1 else None
 
-        if piece_index is None or piece_position is None:
-            if self.callback:
-                self.callback(AI_NOT_FOUND, None, None)
-        else:
-            if self.callback:
-                self.callback(AI_FOUND, piece_index, piece_position)
-
-    def _get_next_piece(self):
-        """Get the piece that was played and the position it was played at.
-
-        Returns:
-            Tuple[int, Tuple[int, int]]: The index of the piece to play and the position to play it at.
-        """
-
-        played_piece = None
-
-        # Find the piece that was played
-        for piece in self.current_state.pieces:
-            if piece not in self.next_state.pieces:
-                played_piece = piece
-                break
-        if not played_piece:
-            return None, None  # No piece found
-
-        # Search top-left to bottom-right for position of played piece, stops at first difference found
-        # (matches the way the pieces are stored/interpreted/displayed - top-left square is (0, 0))
-        for i in range(GRID_SIZE):
-            for j in range(GRID_SIZE):
-                if self.current_state.board[i][j] != self.next_state.board[i][j]:
-                    return played_piece, (i, j)
-        return None, None  # No position found
-
+        return self.next_state.recent_piece[0], self.next_state.recent_piece[1]
 
     def run_algorithm(self):
         """Decorator function to run the AI algorithm and measure its performance (time, memory, states visited).

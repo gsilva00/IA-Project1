@@ -2,6 +2,7 @@ import sys
 
 import pygame
 
+
 from states import GameStateManager, MainMenuState
 from utils.misc import QuitGameException
 
@@ -38,7 +39,7 @@ class Game:
                 self.render()
                 self.clock.tick(30)
         except QuitGameException:
-            print("Quitting game...")
+            print("=== Quitting game... ===")
             self.state_manager.clear_states()
             pygame.quit()
             sys.exit()
