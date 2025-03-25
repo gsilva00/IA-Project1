@@ -267,9 +267,61 @@ class DFSAlgorithm(AIAlgorithm):
         return None  # No valid moves found
 
 class IterDeepAlgorithm(AIAlgorithm):
-    def _execute_algorithm(self):
+    """Implements the Iterative Deepening Search algorithm (IDS) for the AI to find the next move to play.
+    Since it uses DFS to visit the nodes, the code uses the iterative version of the DFS, which is more efficient than the recursive version, especially for large search trees.
+    It also uses a depth limit, to limit the search of each DFS, which is better for a large search space.
+    
+    Args:
+        AIAlgorithm (AIAlgorithm): Class from which IterDeepAlgorithm inherits (Base class for all AI algorithms).
 
-        raise NotImplementedError("Not implemented yet")
+    """
+
+    def _execute_algorithm(self):
+        def depth_limited_search(root, depth_limit):
+            stack = [root]              # Store the nodes
+            visited = set()             # Contains states, not nodes (to avoid duplicate states reached by different paths)
+            found_new_nodes = False     # Track if new nodes were added
+
+            while stack:
+                if self.stop_flag:  # Check stop flag
+                    print("Algorithm stopped early")
+                    return "STOPPED"
+
+                node = stack.pop()
+                if node.state not in visited:
+                    visited.add(node.state)
+                    
+                    if self.goal_state_func(node.state):
+                        return self.order_nodes(node)
+
+                    if node.depth < depth_limit:
+                        for child_state in self.operators_func(node.state):
+                            if child_state not in visited:
+                                child_node = TreeNode(child_state, node, node.path_cost + 1, node.depth + 1)
+                                node.add_child(child_node)
+                                stack.append(child_node)
+                                found_new_nodes = True       # We have added a node to the stack, which means that we could look forward into the graph (not the bottom of the stack).
+            
+            if found_new_nodes:
+                return "NOT YET EXHAUSTED"
+            else:
+                "EXHAUSTED"   # Even if we increase the depth, we wouldn't find any new nodes, as we already searched whole graph
+        #end of depth_limited_search function
+
+        depth_limit = 1                 # normally starts at 0 but it's useless
+        while True:
+            root = TreeNode(self.current_state)
+            result = depth_limited_search(root, depth_limit)
+            if result == "EXHAUSTED" or result == "STOPPED":  # No new nodes were found, stop searching
+                return None
+            if result == "NOT YET EXHAUSTED":  #when the stack was found empty since we reached the limiting depth and no further children nodes were added
+                depth_limit += 1
+            else:                              # an answer was found before we reached empty stack
+                return result  
+   
+
+
+        
 
 class UniformCostAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):

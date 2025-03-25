@@ -752,7 +752,24 @@ class GameplayState(GameState):
         self.ai_algorithm = get_ai_algorithm(ai_algorithm, level)
         self.level = level
 
-        self.game_data = GameData(level)
+        custom_game_data = GameData(level=1)
+        custom_game_data.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [2, 1, 1, 1, 1, 1, 1, 0],
+        ]
+
+        custom_game_data.pieces = [[(0, 0)]]  # A single block piece
+        custom_game_data.following_pieces = []
+        custom_game_data.blocks_to_break = 1
+
+
+        self.game_data = custom_game_data         #GameData(level)
         self.score = 0
         self.selected_index = None
         self.selected_piece = None
@@ -910,10 +927,10 @@ class GameplayState(GameState):
 
         # If algorithm isn't running (finished), handle its move
         if self.ai_running_start_time is None:
-            if self.ai_selected_piece is not None:
+            if self.selected_piece is not None:
                 # If the algorithm found a move, handle it
                 if self.ai_current_pos == self.ai_target_pos:
-                    place_piece(self.game_data.board, self.ai_selected_piece, self.ai_target_pos)
+                    place_piece(self.game_data.board, self.selected_piece, self.ai_target_pos)
                     lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
 
                     # Levels mode
@@ -936,7 +953,7 @@ class GameplayState(GameState):
                         self.ai_algorithm.stop()
                         game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
-                    self.ai_selected_piece = None
+                    self.selected_piece = None
                     self.ai_initial_pos = None
                     self.ai_current_pos = None
                     self.ai_target_pos = None
