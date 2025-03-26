@@ -1,6 +1,5 @@
 import random
 
-
 from game_logic.constants import GRID_SIZE, PIECES
 
 

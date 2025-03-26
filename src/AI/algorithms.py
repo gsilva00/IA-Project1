@@ -1,24 +1,23 @@
+import queue as q
 import time
-import sys
 import tracemalloc
-import queue
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
 from AI.algorithm_registry import AIAlgorithmRegistry
+from AI.heuristics import greedy_heuristic
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
-                                  GREEDY, GRID_SIZE, INFINITE, ITER_DEEP,
+                                  GREEDY, INFINITE, ITER_DEEP,
                                   UNIFORM_COST, WEIGHTED_A_STAR)
-from utils.ai import child_states, goal_state, num_states
+from utils.ai import child_states, goal_state, get_num_states
 from utils.file import stats_to_file
 
-from AI.heuristics import greedy_heuristic
 
 # For running AI algorithms in parallel
 executor = ThreadPoolExecutor(max_workers=1)
 
 class TreeNode:
-    def __init__(self, state, parent=None, path_cost=0, depth=0, score=0):
+    def __init__(self, state, parent=None, path_cost=0, depth=0, heuristic_score=0):
         """Initializes a new TreeNode object.
         Args:
             state (GameData): The state of the game (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
@@ -33,7 +32,7 @@ class TreeNode:
         self.children = []
         self.path_cost = path_cost
         self.depth = depth
-        self.heuristic_score = score
+        self.heuristic_score = heuristic_score
 
     def add_child(self, child_node):
         """Adds a child node to the current node. Also sets the parent of the child node to the current node.
@@ -111,7 +110,7 @@ class AIAlgorithm:
         # No results yet/anymore, so run the algorithm (again)
         if self.result is None:
             if self.future is None:
-                print(f"[{type(self).__name__}] Running algorithm...")
+                print(f"[{type(self).__name__}] Submitting algorithm...")
                 self.future = executor.submit(self.run_algorithm)
                 self.future.add_done_callback(self._on_algorithm_done)
             else:
@@ -130,6 +129,7 @@ class AIAlgorithm:
         Args:
             future (Future): The future object that contains the result of the algorithm.
         """
+        print(f"[{type(self).__name__}] Algorithm done.")
 
         self.result = future.result()
 
@@ -149,7 +149,9 @@ class AIAlgorithm:
         # Remove the state that is being played from the result (to avoid playing the same move again in the next call)
         self.result = self.result[1:] if len(self.result) > 1 else None
 
-        return self.next_state.recent_piece[0], self.next_state.recent_piece[1]
+        for i, piece in enumerate(self.current_state.pieces): # TODO: Change this because what if the piece played in the next state is the 2nd one, which is the same as the 1st one, it returns the index of the first one. Shouldn't be a problem, because the pieces are same. Still.
+            if self.next_state.recent_piece[0] == piece:
+                return i, self.next_state.recent_piece[1]
 
     def run_algorithm(self):
         """Decorator function to run the AI algorithm and measure its performance (time, memory, states visited).
@@ -175,6 +177,8 @@ class AIAlgorithm:
 
         stats = snapshot_after.compare_to(snapshot_before, 'lineno')
         peak_mem = sum(stat.size_diff for stat in stats)
+
+        num_states = get_num_states()
         if result is not None:
             print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
             print(f"[{type(self).__name__}] Memory: {peak_mem / (1024 * 1024):.4f} MB")
@@ -204,10 +208,10 @@ class AIAlgorithm:
         Returns:
             list: The list of nodes from the root (exclusive) to the goal state (inclusive).
         """
-
         print("Called order_nodes() from the class:", type(self))
+
         nodes = []
-        while node and node != self.current_state:
+        while node and node.state != self.current_state:
             nodes.append(node)
             node = node.parent
         nodes.reverse() # Reverse the list to get the path from the root to the goal state
@@ -217,9 +221,6 @@ class AIAlgorithm:
 
 class BFSAlgorithm(AIAlgorithm):
     """Implements the Breadth-First Search algorithm (BFS) for the AI to find the next move to play.
-
-    Args:
-        AIAlgorithm (AIAlgorithm): Class from which BFSAlgorithm inherits (Base class for all AI algorithms).
 
     """
 
@@ -251,9 +252,6 @@ class BFSAlgorithm(AIAlgorithm):
 class DFSAlgorithm(AIAlgorithm):
     """Implements the Depth-First Search algorithm (DFS) for the AI to find the next move to play.
     It uses the iterative version of the algorithm, which is more efficient than the recursive version, especially for large search trees.
-
-    Args:
-        AIAlgorithm (AIAlgorithm): Class from which DFSAlgorithm inherits (Base class for all AI algorithms).
 
     """
 
@@ -287,20 +285,17 @@ class IterDeepAlgorithm(AIAlgorithm):
     """Implements the Iterative Deepening Search algorithm (IDS) for the AI to find the next move to play.
     Since it uses DFS to visit the nodes, the code uses the iterative version of the DFS, which is more efficient than the recursive version, especially for large search trees.
     It also uses a depth limit, to limit the search of each DFS, which is better for a large search space.
-    
-    Args:
-        AIAlgorithm (AIAlgorithm): Class from which IterDeepAlgorithm inherits (Base class for all AI algorithms).
 
     """
 
     def _execute_algorithm(self):
-        def depth_limited_search(root, depth_limit):
-            stack = [root]              # Store the nodes
+        def depth_limited_search(start_node, limit):
+            stack = [start_node]        # Store the nodes
             visited = set()             # Contains states, not nodes (to avoid duplicate states reached by different paths)
             found_new_nodes = False     # Track if new nodes were added
 
             while stack:
-                if self.stop_flag:  # Check stop flag
+                if self.stop_flag:
                     print("Algorithm stopped early")
                     return "STOPPED"
 
@@ -311,7 +306,7 @@ class IterDeepAlgorithm(AIAlgorithm):
                     if self.goal_state_func(node.state):
                         return self.order_nodes(node)
 
-                    if node.depth < depth_limit:
+                    if node.depth < limit:
                         for child_state in self.operators_func(node.state):
                             if child_state not in visited:
                                 child_node = TreeNode(child_state, node, node.path_cost + 1, node.depth + 1)
@@ -348,7 +343,7 @@ class UniformCostAlgorithm(AIAlgorithm):
 class GreedySearchAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
-        pqueue = queue.PriorityQueue()       # Priority queue for node storing
+        pqueue = q.PriorityQueue()       # Priority queue for node storing
         pqueue.put(root)                     # Add the root node to the priority queue
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
 

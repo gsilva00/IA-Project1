@@ -8,8 +8,12 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 800, 700
 # For the board
 CELL_SIZE = 50
 GRID_SIZE = 8
-GRID_OFFSET_X = (SCREEN_WIDTH - GRID_SIZE * CELL_SIZE) // 2
+GRID_OFFSET_X = (SCREEN_WIDTH - GRID_SIZE * CELL_SIZE) // 2  # Board centered on screen (400 for the board, 200 on each side)
 GRID_OFFSET_Y = 1
+
+PIECES_LIST_OFFSET_X_CELLS = 2
+PIECES_LIST_BETWEEN_OFFSET_X_CELLS = 5
+PIECES_LIST_OFFSET_Y_CELLS = 10
 
 # Colors (RGBA)
 BACKGROUND_COLOR = (30, 30, 30, 255)
@@ -26,6 +30,8 @@ _SRC_PATH = os.path.join(_BASE_PATH, 'src')
 _ASSETS_PATH = os.path.join(_BASE_PATH, 'assets')
 _FONTS_PATH = os.path.join(_ASSETS_PATH, 'fonts')
 _IMAGES_PATH = os.path.join(_ASSETS_PATH, 'images')
+
+DATA_PATH = os.path.join(_BASE_PATH, 'data')
 
 # Font
 FONT_PATH = os.path.join(_FONTS_PATH, 'YangBagus-DYMX9.ttf')

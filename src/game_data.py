@@ -11,49 +11,53 @@ class GameData:
         self.board = copy.deepcopy(LEVEL_BOARDS[level]) if level != INFINITE else [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
         self.following_pieces = generate_pieces()
         self.pieces = []
-        self.getMorePlayablePieces()
+        _areThereMore = self.get_more_playable_pieces()
         self.blocks_to_break = copy.deepcopy(LEVEL_BLOCKS[level]) if level != INFINITE else 0
         self.recent_piece = None
 
-    def getMorePlayablePieces(self):
-        """Get more pieces to play from the already generated pieces
+    def get_more_playable_pieces(self):
+        """Get more pieces to play from the already generated pieces.
+
+        Returns:
+            bool: True if there are more pieces to play, False otherwise.
 
         """
 
         if not any(self.pieces):
             if len(self.following_pieces) == 0:
                 self.pieces = []
+                return False # No more pieces to play
             else:
                 self.pieces = self.following_pieces[0]
                 self.following_pieces = self.following_pieces[1:]
+                return True
+        else:
+            return True
 
     def __eq__(self, other):
-        """Check if two GameData objects are equal based on their state."""
+        """Determine if two GameData objects are equal.
+
+        """
+
         if not isinstance(other, GameData):
             return False
 
-        def normalize_pieces(pieces):
-            """Convert pieces to a set of frozensets, ignoring None."""
-            return set(frozenset(piece) if piece is not None else None for piece in pieces)
-
         return (
-            self.board == other.board and
-            normalize_pieces(self.pieces) == normalize_pieces(other.pieces) and
-            self.following_pieces == other.following_pieces and
-            self.blocks_to_break == other.blocks_to_break and
-            self.recent_piece == other.recent_piece
+                self.board == other.board and
+                self._normalize_pieces(self.pieces) == self._normalize_pieces(other.pieces) and
+                self.following_pieces == other.following_pieces and
+                self.blocks_to_break == other.blocks_to_break and
+                self.recent_piece == other.recent_piece
         )
 
     def __hash__(self):
-        """Generate a hash value for the GameData object based on its state."""
+        """Generate a hash value for the GameData object.
 
-        def normalize_pieces(pieces):
-            """Convert pieces to a set of frozensets, ignoring None."""
-            return set(frozenset(piece) if piece is not None else None for piece in pieces)
+        """
 
         return hash((
             tuple(tuple(row) for row in self.board),  # Convert board to a tuple of tuples
-            frozenset(normalize_pieces(self.pieces)),  # Use normalized pieces
+            frozenset(self._normalize_pieces(self.pieces)),  # Use normalized pieces
             tuple(
                 tuple(
                     tuple(piece) if piece is not None else None for piece in group
@@ -62,6 +66,15 @@ class GameData:
             self.blocks_to_break,  # Integer is already hashable
             (tuple(self.recent_piece[0]), self.recent_piece[1]) if self.recent_piece else None  # Handle recent_piece
         ))
+
+    @staticmethod
+    def _normalize_pieces(pieces):
+        """Convert pieces to a set of frozensets, ignoring None.
+
+        """
+
+        return set(frozenset(piece) if piece is not None else None for piece in pieces)
+
 
     def save_game_state(self, file_path):
         """Save the current state of the game to a file (JSON format). The state of the game is NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE. This is the data of the actual gameplay.

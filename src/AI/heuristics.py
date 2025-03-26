@@ -2,6 +2,7 @@ import copy
 
 from game_logic.rules import (clear_full_lines, no_more_valid_moves, place_piece)
 
+
 def greedy_heuristic(node, parent, current):
     score = 0
     (piece, (px, py)) = current.recent_piece

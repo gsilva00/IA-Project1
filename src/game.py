@@ -2,20 +2,20 @@ import sys
 
 import pygame
 
-
 from states import GameStateManager, MainMenuState
 from utils.misc import QuitGameException
 
 
 class Game:
     """Main game class.
+
     """
 
     def __init__(self):
-        self.state_manager = GameStateManager()
-        self.state_manager.switch_to_base_state(MainMenuState())
         self.screen = pygame.display.set_mode((800, 700))
         self.clock = pygame.time.Clock()
+        self.state_manager = GameStateManager(self.screen)
+        self.state_manager.switch_to_base_state(MainMenuState())
 
     def update(self):
         """Update the game state.
