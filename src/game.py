@@ -37,7 +37,7 @@ class Game:
             while True:
                 self.update()
                 self.render()
-                self.clock.tick(30)
+                self.clock.tick(60)
         except QuitGameException:
             print("=== Quitting game... ===")
             self.state_manager.clear_states()

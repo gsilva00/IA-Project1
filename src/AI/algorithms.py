@@ -1,5 +1,7 @@
 import time
+import sys
 import tracemalloc
+import queue
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
@@ -10,18 +12,20 @@ from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
 from utils.ai import child_states, goal_state, num_states
 from utils.file import stats_to_file
 
+from AI.heuristics import greedy_heuristic
 
 # For running AI algorithms in parallel
 executor = ThreadPoolExecutor(max_workers=1)
 
 class TreeNode:
-    def __init__(self, state, parent=None, path_cost=0, depth=0):
+    def __init__(self, state, parent=None, path_cost=0, depth=0, score=0):
         """Initializes a new TreeNode object.
         Args:
             state (GameData): The state of the game (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
             parent (TreeNode, optional): The parent node of the current node. Defaults to None.
             path_cost (int, optional): The cost to reach the current node from the root node. Defaults to 0.
             depth (int, optional): The depth of the current node in the search tree. Defaults to 0.
+            heuristic_score (int, optional): The score of the node based on the heuristic function. Defaults to 0.
         """
 
         self.state = state
@@ -29,6 +33,7 @@ class TreeNode:
         self.children = []
         self.path_cost = path_cost
         self.depth = depth
+        self.heuristic_score = score
 
     def add_child(self, child_node):
         """Adds a child node to the current node. Also sets the parent of the child node to the current node.
@@ -39,6 +44,18 @@ class TreeNode:
 
         self.children.append(child_node)
         child_node.parent = self    # Constructor can already do this, it's partially redundant but that's okay
+    
+    def __lt__(self, other):
+        """Defines the less-than comparison for TreeNode objects.
+        This is used by the priority queue to compare nodes.
+
+        Args:
+            other (TreeNode): The other TreeNode to compare with.
+
+        Returns:
+            bool: True if this node is less than the other node, False otherwise.
+        """
+        return self.heuristic_score > other.heuristic_score
 
 class AIAlgorithm:
     def __init__(self, level):
@@ -330,8 +347,36 @@ class UniformCostAlgorithm(AIAlgorithm):
 
 class GreedySearchAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):
+        root = TreeNode(self.current_state)  # Root node in the search tree
+        pqueue = queue.PriorityQueue()       # Priority queue for node storing
+        pqueue.put(root)                     # Add the root node to the priority queue
+        visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
 
-        raise NotImplementedError("Not implemented yet")
+        while not pqueue.empty():
+            if self.stop_flag:
+                print("Algorithm stopped early")
+                return None
+
+            node = pqueue.get()
+
+            if self.goal_state_func(node.state):
+                return self.order_nodes(node)
+
+            for child_state in self.operators_func(node.state):
+                if child_state not in visited:
+                    child_node = TreeNode(
+                        child_state,
+                        node,
+                        node.path_cost + 1,
+                        node.depth + 1,
+                        greedy_heuristic(node, node.state, child_state)
+                    )
+                    node.add_child(child_node)
+
+                    pqueue.put(child_node)
+                    visited.add(child_state)
+
+        return None  # No valid moves found
 
 class AStarAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):

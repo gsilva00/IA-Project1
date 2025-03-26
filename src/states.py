@@ -862,7 +862,7 @@ class GameplayState(GameState):
                     mx, my = pygame.mouse.get_pos()
                     px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
                     if is_valid_position(self.game_data.board, self.selected_piece, (px-4, py)):
-                        place_piece(self.game_data.board, self.selected_piece, (px-4, py))
+                        place_piece(self.game_data, self.selected_piece, (px-4, py))
                         lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
 
                         # Levels mode
@@ -930,7 +930,7 @@ class GameplayState(GameState):
             if self.selected_piece is not None:
                 # If the algorithm found a move, handle it
                 if self.ai_current_pos == self.ai_target_pos:
-                    place_piece(self.game_data.board, self.selected_piece, self.ai_target_pos)
+                    place_piece(self.game_data, self.selected_piece, self.ai_target_pos)
                     lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
 
                     # Levels mode
@@ -982,10 +982,10 @@ class GameplayState(GameState):
 
         # Draw the hint piece
         if self.ai_hint_index is not None and self.ai_hint_position is not None and self.hint_pressed:
-            board = copy.deepcopy(self.game_data.board)
+            game_data = copy.deepcopy(self.game_data)
             piece = self.game_data.pieces[self.ai_hint_index]
-            place_piece(board, piece, self.ai_hint_position)
-            draw_board(game.screen, board)
+            place_piece(game_data.board, piece, self.ai_hint_position)
+            draw_board(game.screen, game_data.board)
         else:
             draw_board(game.screen, self.game_data.board)
 

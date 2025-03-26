@@ -20,7 +20,7 @@ def child_states(game_data):
     # Avoid having to return a new gameplay state (GameData) with no pieces to play
     if not any(game_data.pieces):
         game_data.getMorePlayablePieces()
-        child_states(game_data)
+        new_states = child_states(game_data)
     else:
         for i, piece in enumerate(game_data.pieces):
             if piece is not None:
@@ -28,8 +28,8 @@ def child_states(game_data):
                     for x in range(GRID_SIZE):
                         if is_valid_position(game_data.board, piece, (x, y)):
                             new_data = copy.deepcopy(game_data)
-                            place_piece(new_data.board, piece, (x, y))
-                            _lines_cleared, target_blocks_cleared = clear_full_lines(new_data.board)
+                            place_piece(new_data, piece, (x, y))
+                            _, target_blocks_cleared = clear_full_lines(new_data.board)
                             new_data.blocks_to_break -= target_blocks_cleared
                             new_data.pieces[i] = None
 
