@@ -32,7 +32,7 @@ def draw_board(screen, board):
             pygame.draw.rect(screen, GRAY, rect, 1)
 
 def draw_piece(screen, piece, position, is_selected, offset_y=0):
-    """Draw a piece on the board
+    """Draw a piece on the screen
 
     Args:
         screen (pygame.Surface): The screen to draw on
@@ -52,6 +52,7 @@ def draw_piece(screen, piece, position, is_selected, offset_y=0):
             screen.blit(wood_light, ((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE))
         else:
             screen.blit(wood, ((px + x) * CELL_SIZE, (py + y + offset_y) * CELL_SIZE))
+        # Draw border around piece
         pygame.draw.rect(screen, GRAY, rect,1)
 
 def draw_score(screen, score):

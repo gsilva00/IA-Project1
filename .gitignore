@@ -1,5 +1,9 @@
-# Ignore VSCode settings
+# Ignore IDE settings
 .vscode/
+.idea/
+
+# Ignore data files (until they are ready)
+data/
 
 # Ignore Python cache
 __pycache__/

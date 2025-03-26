@@ -20,10 +20,11 @@ from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND,
                                   INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2,
                                   LEVEL_3, LEVELS, ORANGE, SCREEN_HEIGHT,
                                   SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR,
-                                  WHITE)
+                                  WHITE, PIECES_LIST_OFFSET_X_CELLS, PIECES_LIST_OFFSET_Y_CELLS,
+                                  PIECES_LIST_BETWEEN_OFFSET_X_CELLS, GRID_OFFSET_X)
 from game_logic.rules import (clear_full_lines, is_valid_position,
                               no_more_valid_moves, place_piece)
-from utils.misc import QuitGameException
+from utils.misc import QuitGameException, ScreenWrapper
 from utils.ui import draw_board, draw_piece, draw_score
 
 
@@ -32,8 +33,9 @@ class GameStateManager:
 
     """
 
-    def __init__(self):
+    def __init__(self, screen):
         self.state_stack = []
+        self.screen = screen
 
     def switch_to_base_state(self, new_state):
         """Switch to a new state and remove all previous states
@@ -43,7 +45,7 @@ class GameStateManager:
         """
 
         self.clear_states()
-        new_state.enter(self)
+        new_state.enter(self.screen)
         self.state_stack = [new_state]
 
     def push_state(self, new_state):
@@ -53,26 +55,34 @@ class GameStateManager:
             new_state (GameState): The new state to push
         """
 
-        if self.current_state:
-            self.current_state.exit(self)
+        if self.current_state is not None:
+            self.current_state.exit(self.screen)
         self.state_stack.append(new_state)
         print("Pushed state")
-        new_state.enter(self)
+        new_state.enter(self.screen)
 
-    def pop_state(self):
+    def pop_state(self, times=1):
         """Pop the current state
+
+        Args:
+            times (int): The number of times to pop the state
 
         Returns:
             bool: True if the state was popped, False otherwise
         """
+        popped = False
+        for _ in range(times):
+            if self.current_state is not None:
+                self.state_stack.pop().exit(self.screen)
+                print("Popped state")
+                popped = True
+            else:
+                break
 
-        if self.current_state:
-            self.state_stack.pop().exit(self)
-            print("Popped state")
-            if self.current_state:
-                self.current_state.enter(self)
-            return True
-        return False
+        if self.current_state is not None:
+            self.current_state.enter(self.screen)
+
+        return popped
 
     def peek_state(self):
         """Get the state at the top of the stack
@@ -98,8 +108,8 @@ class GameStateManager:
 
         if len(self.state_stack) > 1:
             self.state_stack[-2] = new_state
-            self.state_stack.pop().exit(self)
-            new_state.enter(self)
+            self.state_stack.pop().exit(self.screen)
+            new_state.enter(self.screen)
             return True
         return False
 
@@ -109,7 +119,7 @@ class GameStateManager:
         """
 
         while self.state_stack:
-            self.state_stack.pop().exit(self)
+            self.state_stack.pop().exit(self.screen)
 
     @property
     def current_state(self):
@@ -130,12 +140,12 @@ class GameState:
     """
     # Each subclass stores its Model
 
-    def enter(self, game):
+    def enter(self, screen):
         """Called when the game state is entered
         Used for debugging, possible transition effects and other initializations separate from the constructor
 
         Args:
-            game (Game): The Game object
+            screen (pygame.Surface): The screen to render on
         """
         pass
 
@@ -144,7 +154,7 @@ class GameState:
 
         Args:
             game (Game): The Game object
-            events (pygame.event.Event): The events that have occurred
+            events (List[pygame.event.Event]): The events that have occurred
         """
         pass
 
@@ -156,12 +166,12 @@ class GameState:
         """
         pass
 
-    def exit(self, game):
+    def exit(self, screen):
         """Called when the game state is exited
         Used for debugging, possible transition effects and other clean-up operations
 
         Args:
-            game (Game): The Game object
+            screen (pygame.Surface): The screen to render on
         """
         pass
 
@@ -171,14 +181,12 @@ class GameState:
 class MainMenuState(GameState):
     """Main menu of the game
 
-    Args:
-        GameState (GameState): Class from which MainMenuState inherits (Base class for all game states)
     """
 
     def __init__(self):
         self.alpha = 255  # For transition effect
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Entering Main Menu")
 
     def update(self, game, events):
@@ -214,23 +222,12 @@ class MainMenuState(GameState):
         game.screen.blit(start_text, start_rect)
         pygame.display.flip()
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Main Menu")
-        # while self.alpha > 0:
-        #     game.state_manager.current_state.render(game)
-        #     fade_surface = pygame.Surface((game.screen.get_width(), game.screen.get_height()))
-        #     fade_surface.fill((0, 0, 0))
-        #     fade_surface.set_alpha(self.alpha)
-        #     game.screen.blit(fade_surface, (0, 0))
-        #     pygame.display.flip()
-        #     self.alpha -= 5  # Adjust the speed of the fade-out effect
-        # self.alpha = 255  # Reset alpha for next time
 
 class SelectPlayerState(GameState):
     """Menu to select either player mode or AI mode
 
-    Args:
-        GameState (GameState): Class from which SelectPlayerState inherits (Base class for all game states)
     """
 
     def __init__(self):
@@ -241,7 +238,7 @@ class SelectPlayerState(GameState):
         self.ai_rect = None
         self.back_rect = None
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Entering Select Player Menu")
 
     def update(self, game, events):
@@ -265,12 +262,12 @@ class SelectPlayerState(GameState):
                     game.state_manager.pop_state()
 
                 elif event.key in [pygame.K_UP, pygame.K_w]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 3
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option + 1) % 3
@@ -334,14 +331,12 @@ class SelectPlayerState(GameState):
         pygame.display.flip()
 
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Select Player Menu")
 
 class SelectAIAlgorithmState(GameState):
     """Menu to select the AI algorithm (for player mode's hints or for AI mode)
 
-    Args:
-        GameState (GameState): Class from which SelectAIAlgorithmState inherits (Base class for all game states)
     """
 
     def __init__(self, player):
@@ -360,7 +355,7 @@ class SelectAIAlgorithmState(GameState):
         self.weighted_a_star_rect = None
         self.back_rect = None
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Entering Select AI Algorithm Menu")
 
     def update(self, game, events):
@@ -394,12 +389,12 @@ class SelectAIAlgorithmState(GameState):
                     game.state_manager.pop_state()
 
                 elif event.key in [pygame.K_UP, pygame.K_w]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 8
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option + 1) % 8
@@ -501,14 +496,12 @@ class SelectAIAlgorithmState(GameState):
         game.screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Select AI Algorithm Menu")
 
 class SelectModeState(GameState):
     """Menu to select the game mode (Levels or Infinite)
 
-    Args:
-        GameState (GameState): Class from which SelectModeState inherits (Base class for all game states)
     """
 
     def __init__(self, player, ai_algorithm):
@@ -524,7 +517,7 @@ class SelectModeState(GameState):
     def get_menu_rects(self):
         return self.levels_rect, self.infinite_rect, self.quit_rect
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Entering Select Mode Menu")
 
     def update(self, game, events):
@@ -546,12 +539,12 @@ class SelectModeState(GameState):
                     game.state_manager.pop_state()
 
                 elif event.key in [pygame.K_UP, pygame.K_w]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 3
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option + 1) % 3
@@ -614,14 +607,12 @@ class SelectModeState(GameState):
         game.screen.blit(quit_text, self.quit_rect)
         pygame.display.flip()
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Main Menu")
 
 class SelectLevelState(GameState):
     """Menu to select the game level for the Levels mode
 
-    Args:
-        GameState (GameState): Class from which SelectLevelState inherits (Base class for all game states)
     """
 
     def __init__(self, player, ai_algorithm):
@@ -635,7 +626,7 @@ class SelectLevelState(GameState):
         self.level_3_rect = None
         self.back_rect = None
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Entering Select Level")
 
     def update(self, game, events):
@@ -661,12 +652,12 @@ class SelectLevelState(GameState):
                     game.state_manager.pop_state()
 
                 elif event.key in [pygame.K_UP, pygame.K_w]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 4
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option + 1) % 4
@@ -735,24 +726,38 @@ class SelectLevelState(GameState):
         game.screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Select Level")
 
 
 class GameplayState(GameState):
     """Gameplay state of the game
 
-    Args:
-        GameState (GameState): Class from which GameplayState inherits (Base class for all game states)
     """
 
     def __init__(self, player, ai_algorithm, level=INFINITE):
-        print("GameplayState constructor called")
         self.player = player
         self.ai_algorithm = get_ai_algorithm(ai_algorithm, level)
         self.level = level
 
-        self.game_data = GameData(level)
+        custom_game_data = GameData(level=1)
+        custom_game_data.board = [
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [2, 1, 1, 1, 1, 1, 1, 0],
+        ]
+
+        custom_game_data.pieces = [[(0, 0)]]  # A single block piece
+        custom_game_data.following_pieces = []
+        custom_game_data.blocks_to_break = 1
+
+
+        self.game_data = custom_game_data         #GameData(level)
         self.score = 0
         self.selected_index = None
         self.selected_piece = None
@@ -762,9 +767,12 @@ class GameplayState(GameState):
         self.ai_hint_index = None
         self.ai_hint_position = None
 
+        self.ai_running_start_time = None
         self.ai_initial_pos = None
         self.ai_current_pos = None
         self.ai_target_pos = None
+
+        self.done = None
 
     def on_ai_move_done(self, status, piece_index, piece_position):
         """Callback function for AI algorithm to notify/update state when it has found a move
@@ -782,28 +790,35 @@ class GameplayState(GameState):
             if self.player == HUMAN:
                 self.ai_hint_index = piece_index
                 self.ai_hint_position = piece_position
+
             else:
                 self.selected_index = piece_index
                 self.selected_piece = self.game_data.pieces[self.selected_index]
-                self.game_data.pieces[self.selected_index] = None
-                self.ai_target_pos = piece_position
+                self.ai_target_pos = (GRID_OFFSET_X + piece_position[0] * CELL_SIZE, (GRID_OFFSET_Y + piece_position[1]) * CELL_SIZE)
 
                 for i, piece in enumerate(self.game_data.pieces):
                     if piece == self.selected_piece:
-                        self.ai_initial_pos = (i * 5 + 2, 10)
+                        # Convert from cell-based coordinates to screen-based coordinates
+                        self.ai_initial_pos = ((i * PIECES_LIST_BETWEEN_OFFSET_X_CELLS + PIECES_LIST_OFFSET_X_CELLS) * CELL_SIZE, PIECES_LIST_OFFSET_Y_CELLS * CELL_SIZE)
                         self.ai_current_pos = self.ai_initial_pos
                         break
+
+                self.game_data.pieces[self.selected_index] = None
 
         elif status == AI_NOT_FOUND:
             print("AI didn't find a move")
             self.ai_running_start_time = None
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Starting Gameplay")
 
         # Start running the AI algorithm AS SOON AS WE ENTER THE GAMEPLAY STATE
-        self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
-        self.ai_running_start_time = time.time()
+        if (
+            (self.player == HUMAN and (not self.ai_hint_index or not self.ai_hint_position)) or
+            (self.player == AI and (not self.ai_initial_pos or not self.ai_current_pos or not self.ai_target_pos))
+        ):
+            self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
+            self.ai_running_start_time = time.time()
 
     def update(self, game, events):
         if self.player == HUMAN:
@@ -813,11 +828,21 @@ class GameplayState(GameState):
 
     def update_player(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 self.ai_algorithm.stop()
                 raise QuitGameException()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
+                    # Stop the AI algorithm running in the background (if it is)
+                    game.state_manager.push_state(PauseState())
+
+                if event.key == pygame.K_h:
+                    # Callback function will handle assigning the AI's move to the corresponding variables
+                    # Check how those variables are used in the events above
+                    self.hint_pressed = True
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.selected_piece is None:
                     mx, my = pygame.mouse.get_pos()
                     for i, piece in enumerate(self.game_data.pieces):
@@ -841,7 +866,7 @@ class GameplayState(GameState):
                     mx, my = pygame.mouse.get_pos()
                     px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
                     if is_valid_position(self.game_data.board, self.selected_piece, (px-4, py)):
-                        place_piece(self.game_data.board, self.selected_piece, (px-4, py))
+                        place_piece(self.game_data, self.selected_piece, (px-4, py))
                         lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
 
                         # Levels mode
@@ -851,54 +876,62 @@ class GameplayState(GameState):
 
                             if self.game_data.blocks_to_break <= 0:
                                 self.ai_algorithm.stop()
+                                self.done = True
+
+                                # push_state() will call exit() of this state, which EXCEPTIONALLY calls render() to render the final state, so these variables need to be reset early
+                                self.selected_index = None
+                                self.selected_piece = None
+                                self.hint_pressed = False
+                                self.ai_hint_index = None
+                                self.ai_hint_position = None
+
                                 game.state_manager.push_state(LevelCompleteState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
                         else:
                             self.score += lines_cleared
 
-                        # Player made move, state changed, prepare next hint
-                        if self.ai_running_start_time is None and self.selected_index == self.ai_hint_index and px-4 == self.ai_hint_position[0] and py == self.ai_hint_position[1]:
-                            # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
-                            self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
-                            self.ai_running_start_time = time.time()
-                        elif self.ai_running_start_time is None and (self.selected_index != self.ai_hint_index or px-4 != self.ai_hint_position[0] or py != self.ai_hint_position[1]):
-                            # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
-                            self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done, True)
-                            self.ai_running_start_time = time.time()
+                        if not self.done:
+                            # Player made move, state changed, prepare next hint
+                            if (
+                                    self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
+                                    self.selected_index == self.ai_hint_index and px-4 == self.ai_hint_position[0] and py == self.ai_hint_position[1]
+                            ):
+                                # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
+                                self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
+                                self.ai_running_start_time = time.time()
+                            elif (
+                                    self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
+                                    (self.selected_index != self.ai_hint_index or px-4 != self.ai_hint_position[0] or py != self.ai_hint_position[1])
+                            ):
+                                # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
+                                self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done, True)
+                                self.ai_running_start_time = time.time()
+
+                            # All pieces placed (all None), generate new ones
+                            if not any(self.game_data.pieces):
+                                _areThereMore = self.game_data.get_more_playable_pieces()
+
+                            if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
+                                self.ai_algorithm.stop()
+                                game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
+
                         # Clear the current hint
                         self.hint_pressed = False
                         self.ai_hint_index = None
                         self.ai_hint_position = None
-
-                        # All pieces placed (all None), generate new ones
-                        if not any(self.game_data.pieces):
-                            self.game_data.getMorePlayablePieces()
-
-                        if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
-                            self.ai_algorithm.stop()
-                            game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
                     else:
                         # Restore visibility if not placed
                         for i, piece in enumerate(self.game_data.pieces):
-                            if self.selected_index == i and piece == None:
+                            if self.selected_index == i and piece is None:
                                 self.game_data.pieces[i] = self.selected_piece
 
                     self.selected_index = None
                     self.selected_piece = None
-
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
-                    # Stop the AI algorithm running in the background (if it is)
-                    game.state_manager.push_state(PauseState())
-
-                if event.key == pygame.K_h:
-                    # Callback function will handle assigning the AI's move to the corresponding variables
-                    # Check how those variables are used in the events above
-                    self.hint_pressed = True
+                    self.done = False
 
     def update_ai(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 self.ai_algorithm.stop()
                 raise QuitGameException()
 
@@ -906,10 +939,11 @@ class GameplayState(GameState):
 
         # If algorithm isn't running (finished), handle its move
         if self.ai_running_start_time is None:
-            if self.ai_selected_piece is not None:
+            if self.selected_piece is not None:
                 # If the algorithm found a move, handle it
                 if self.ai_current_pos == self.ai_target_pos:
-                    place_piece(self.game_data.board, self.ai_selected_piece, self.ai_target_pos)
+                    px, py = (self.ai_target_pos[0] - GRID_OFFSET_X) // CELL_SIZE, (self.ai_target_pos[1] // CELL_SIZE) - GRID_OFFSET_Y
+                    place_piece(self.game_data, self.selected_piece, (px, py))
                     lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
 
                     # Levels mode
@@ -919,28 +953,36 @@ class GameplayState(GameState):
 
                         if self.game_data.blocks_to_break <= 0:
                             self.ai_algorithm.stop()
+                            self.done = True
+
+                            # push_state() will call exit() of this state, which EXCEPTIONALLY calls render() to render the final state, so these variables need to be reset early
+                            self.selected_piece = None
+                            self.ai_initial_pos = None
+                            self.ai_current_pos = None
+                            self.ai_target_pos = None
+
                             game.state_manager.push_state(LevelCompleteState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
                     else:
                         self.score += lines_cleared
 
-                    # All pieces placed (all None), generate new ones
-                    if not any(self.game_data.pieces):
-                        self.game_data.getMorePlayablePieces()
+                    if not self.done:
+                        # All pieces placed (all None), generate new ones
+                        if not any(self.game_data.pieces):
+                            _areThereMore = self.game_data.get_more_playable_pieces()
 
-                    if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
-                        self.ai_algorithm.stop()
-                        game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
+                        if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
+                            self.ai_algorithm.stop()
+                            game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
-                    self.ai_selected_piece = None
+                    self.selected_piece = None
                     self.ai_initial_pos = None
                     self.ai_current_pos = None
                     self.ai_target_pos = None
+                    self.done = False
             else:
-                # If the algorithm didn't find a move, get the next one
-                # Don't know when this will happen, but just in case
-                self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
-                self.ai_running_start_time = time.time()
+                # AI didn't find a move
+                game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
         else:
             # Do nothing, the AI is still running
             pass
@@ -963,10 +1005,10 @@ class GameplayState(GameState):
 
         # Draw the hint piece
         if self.ai_hint_index is not None and self.ai_hint_position is not None and self.hint_pressed:
-            board = copy.deepcopy(self.game_data.board)
-            piece = self.game_data.pieces[self.ai_hint_index]
-            place_piece(board, piece, self.ai_hint_position)
-            draw_board(game.screen, board)
+            game_data = copy.deepcopy(self.game_data)
+            piece = self.game_data.pieces[self.ai_hint_index] if self.game_data.pieces[self.ai_hint_index] is not None else self.selected_piece
+            place_piece(game_data, piece, self.ai_hint_position, True)
+            draw_board(game.screen, game_data.board)
         else:
             draw_board(game.screen, self.game_data.board)
 
@@ -975,8 +1017,8 @@ class GameplayState(GameState):
 
         # Draw the list of pieces
         for i, piece in enumerate(self.game_data.pieces):
-            if piece != None:
-                draw_piece(game.screen, piece, (i*5+2, 10), False)
+            if piece is not None:
+                draw_piece(game.screen, piece, (i*PIECES_LIST_BETWEEN_OFFSET_X_CELLS+PIECES_LIST_OFFSET_X_CELLS, PIECES_LIST_OFFSET_Y_CELLS), False)
 
         if self.selected_piece is not None:
             draw_piece(game.screen, self.selected_piece, (px, py), True, GRID_OFFSET_Y)
@@ -1010,15 +1052,18 @@ class GameplayState(GameState):
 
         # Draw the list of pieces
         for i, piece in enumerate(self.game_data.pieces):
-            if piece != None:
-                draw_piece(game.screen, piece, (i*5+2, 10), False)
+            if piece is not None:
+                draw_piece(game.screen, piece, (i*PIECES_LIST_BETWEEN_OFFSET_X_CELLS+PIECES_LIST_OFFSET_X_CELLS, PIECES_LIST_OFFSET_Y_CELLS), False)
 
         if self.selected_piece is not None:
             if self.ai_current_pos != self.ai_target_pos:
+                px, py = self.ai_current_pos[0] / CELL_SIZE, self.ai_current_pos[1] / CELL_SIZE
+                draw_piece(game.screen, self.selected_piece, (px, py), True)
+
                 cx, cy = self.ai_current_pos
                 tx, ty = self.ai_target_pos
                 distance = math.sqrt((tx - cx) ** 2 + (ty - cy) ** 2)
-                speed = 5  # TODO: Adjust the speed once we're able to test the AI
+                speed = 20
                 if distance < speed:
                     self.ai_current_pos = self.ai_target_pos
                 else:
@@ -1035,7 +1080,6 @@ class GameplayState(GameState):
 
                     self.ai_current_pos = (cx + step_x, cy + step_y)
 
-                draw_piece(game.screen, self.selected_piece, self.ai_current_pos, True)
 
         # The AI is running, show the time elapsed
         if self.ai_running_start_time is not None:
@@ -1052,8 +1096,15 @@ class GameplayState(GameState):
         draw_score(game.screen, self.score)
         pygame.display.flip()
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Gameplay")
+
+        # If the game is done, show the final state for a while, then move to the next state
+        if self.done:
+            screen_wrapper = ScreenWrapper(screen)
+            self.render(screen_wrapper)
+            time.sleep(0.8)
+
 
         # Stop the AI algorithm running in the background
         # This way, it also stops when the game is paused (which is kind of a waste of time)
@@ -1062,8 +1113,6 @@ class GameplayState(GameState):
 class PauseState(GameState):
     """Pause menu
 
-    Args:
-        GameState (GameState): Class from which PauseState inherits (Base class for all game states)
     """
 
     def __init__(self):
@@ -1073,18 +1122,23 @@ class PauseState(GameState):
         self.resume_rect = None
         self.exit_rect = None
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Game Paused")
 
     def update(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
+                # Get the GameplayState and stop the AI algorithm
+                game.state_manager.pop_state()
+                game.state_manager.peek_state().ai_algorithm.stop()
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.resume_rect.collidepoint(event.pos):
                     game.state_manager.pop_state()
                 elif self.exit_rect.collidepoint(event.pos):
+                    game.state_manager.pop_state()
+                    game.state_manager.peek_state().ai_algorithm.stop()
                     game.state_manager.switch_to_base_state(MainMenuState())
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
@@ -1094,15 +1148,17 @@ class PauseState(GameState):
                 if event.key in [pygame.K_r, pygame.K_ESCAPE, pygame.K_p]:
                     game.state_manager.pop_state()
                 elif event.key == pygame.K_BACKSPACE:
+                    game.state_manager.pop_state()
+                    game.state_manager.peek_state().ai_algorithm.stop()
                     game.state_manager.switch_to_base_state(MainMenuState())
 
                 elif event.key in [pygame.K_UP, pygame.K_w]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 2
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option + 1) % 2
@@ -1110,6 +1166,8 @@ class PauseState(GameState):
                     if self.selected_option == 0:
                         game.state_manager.pop_state()
                     elif self.selected_option == 1:
+                        game.state_manager.pop_state()
+                        game.state_manager.peek_state().ai_algorithm.stop()
                         game.state_manager.switch_to_base_state(MainMenuState())
 
     def render(self, game):
@@ -1117,8 +1175,8 @@ class PauseState(GameState):
         pause_text = font.render('Pause', True, WHITE)
 
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        resume_text = font.render('Press R to Resume', True, WHITE)
-        exit_text = font.render('Press BACKSPACE to Exit', True, WHITE)
+        resume_text = font.render('Resume', True, WHITE)
+        exit_text = font.render('Quit', True, WHITE)
 
         # Non-interactable rectangles
         pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
@@ -1138,22 +1196,20 @@ class PauseState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-        resume_text = font.render('Press R to Resume', True, ORANGE if self.selected_option == 0 else WHITE)
-        exit_text = font.render('Press ESC to Exit', True, ORANGE if self.selected_option == 1 else WHITE)
+        resume_text = font.render('Resume', True, ORANGE if self.selected_option == 0 else WHITE)
+        exit_text = font.render('Quit', True, ORANGE if self.selected_option == 1 else WHITE)
 
         game.screen.blit(pause_text, pause_rect)
         game.screen.blit(resume_text, self.resume_rect)
         game.screen.blit(exit_text, self.exit_rect)
         pygame.display.flip()
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Pause")
 
 class GameOverState(GameState):
     """Game Over menu
 
-    Args:
-        GameState (GameState): Class from which GameOverState inherits (Base class for all game states)
     """
 
     def __init__(self, player, score, ai_algorithm, level):
@@ -1168,7 +1224,7 @@ class GameOverState(GameState):
         self.play_again_rect = None
         self.back_rect = None
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Game Over")
 
     def update(self, game, events):
@@ -1180,23 +1236,21 @@ class GameOverState(GameState):
                     game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
                 elif self.back_rect.collidepoint(event.pos):
                     # Pop the GameOverState and the GameplayState
-                    game.state_manager.pop_state()
-                    game.state_manager.pop_state()
+                    game.state_manager.pop_state(2)
             elif event.type == pygame.KEYDOWN:
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
                 if event.key == pygame.K_BACKSPACE:
-                    game.state_manager.pop_state()
-                    game.state_manager.pop_state()
+                    game.state_manager.pop_state(2)
 
                 elif event.key in [pygame.K_UP, pygame.K_w]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 2
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option + 1) % 2
@@ -1204,8 +1258,7 @@ class GameOverState(GameState):
                     if self.selected_option == 0:
                         game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
                     elif self.selected_option == 1:
-                        game.state_manager.pop_state()
-                        game.state_manager.pop_state()
+                        game.state_manager.pop_state(2)
 
     def render(self, game):
         font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
@@ -1243,14 +1296,12 @@ class GameOverState(GameState):
         game.screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Game Over")
 
 class LevelCompleteState(GameState):
     """Level Complete menu
 
-    Args:
-        GameState (GameState): Class from which LevelCompleteState inherits (Base class for all game states)
     """
 
     def __init__(self, score, player, ai_algorithm, level):
@@ -1267,7 +1318,7 @@ class LevelCompleteState(GameState):
         self.play_next_rect = None
         self.back_rect = None
 
-    def enter(self, game):
+    def enter(self, screen):
         print("Level Complete")
 
     def update(self, game, events):
@@ -1277,16 +1328,13 @@ class LevelCompleteState(GameState):
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.next_level_rect.collidepoint(event.pos) and self.level != LEVELS[-1]:
-                    game.state_manager.pop_state()
-                    game.state_manager.pop_state()
+                    game.state_manager.pop_state(2)
                     game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level + 1))
                 elif self.play_next_rect.collidepoint(event.pos):
-                    game.state_manager.pop_state()
-                    game.state_manager.pop_state()
+                    game.state_manager.pop_state(2)
                     game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
                 elif self.back_rect.collidepoint(event.pos):
-                    game.state_manager.pop_state()
-                    game.state_manager.pop_state()
+                    game.state_manager.pop_state(2)
             # Keyboard events
             elif event.type == pygame.KEYDOWN:
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
@@ -1296,27 +1344,24 @@ class LevelCompleteState(GameState):
                     game.state_manager.pop_state()
 
                 elif event.key in [pygame.K_UP, pygame.K_w]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option - 1) % 3
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                    if self.selected_option == None:
+                    if self.selected_option is None:
                         self.selected_option = 0
                     else:
                         self.selected_option = (self.selected_option + 1) % 3
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0 and self.level != LEVELS[-1]:
-                        game.state_manager.pop_state()
-                        game.state_manager.pop_state()
+                        game.state_manager.pop_state(2)
                         game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level + 1))
                     elif self.selected_option == 1:
-                        game.state_manager.pop_state()
-                        game.state_manager.pop_state()
+                        game.state_manager.pop_state(2)
                         game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
                     elif self.selected_option == 2:
-                        game.state_manager.pop_state()
-                        game.state_manager.pop_state()
+                        game.state_manager.pop_state(2)
 
     def render(self, game):
         font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
@@ -1363,5 +1408,5 @@ class LevelCompleteState(GameState):
         pygame.display.flip()
 
 
-    def exit(self, game):
+    def exit(self, screen):
         print("Exiting Level Complete")

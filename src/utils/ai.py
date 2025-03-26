@@ -1,11 +1,18 @@
 import copy
 
 from game_logic.constants import GRID_SIZE
-from game_logic.rules import clear_full_lines, is_valid_position, place_piece
+from game_logic.rules import clear_full_lines, is_valid_position, no_more_valid_moves, place_piece
 
 
-# Keep track of the number of states generated
-num_states = 0
+_num_states = 0
+def get_num_states():
+    """Get the total number of states generated in another module
+
+    Returns:
+        int: The number of states generated
+    """
+
+    return _num_states
 
 def child_states(game_data):
     """Generate all possible child states from the current state of the game being played
@@ -14,13 +21,15 @@ def child_states(game_data):
         game_data (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
     """
 
-    global num_states
+    global _num_states
     new_states = []
 
     # Avoid having to return a new gameplay state (GameData) with no pieces to play
     if not any(game_data.pieces):
-        game_data.getMorePlayablePieces()
-        child_states(game_data)
+        if game_data.get_more_playable_pieces():
+            new_states = child_states(game_data)
+        else:
+            return new_states
     else:
         for i, piece in enumerate(game_data.pieces):
             if piece is not None:
@@ -28,27 +37,12 @@ def child_states(game_data):
                     for x in range(GRID_SIZE):
                         if is_valid_position(game_data.board, piece, (x, y)):
                             new_data = copy.deepcopy(game_data)
-                            place_piece(new_data.board, piece, (x, y))
-                            _lines_cleared, target_blocks_cleared = clear_full_lines(new_data.board)
+                            place_piece(new_data, piece, (x, y))
+                            _, target_blocks_cleared = clear_full_lines(new_data.board)
                             new_data.blocks_to_break -= target_blocks_cleared
                             new_data.pieces[i] = None
 
-                            # if new_data.pieces.count(None) in [2, 3]:
-                            #     print("Pieces left: ", 3-new_data.pieces.count(None))
-
-                            # print(f"Playable pieces: {new_data.pieces}")
-
-                            # if new_data.blocks_to_break != 4:
-                            #     print("Blocks to break: ", new_data.blocks_to_break)
-
-                            # with open('/home/gui/Desktop/AI/output/pieces_output.txt', 'a') as f:
-                            #     f.write(f"{new_data.pieces}\n")
-
-                            # with open('/home/gui/Desktop/AI/output/board_output.txt', 'a') as f:
-                            #     if (new_data.blocks_to_break != 4):
-                            #         f.write(f"{new_data.board}\n\n")
-
-                            num_states += 1
+                            _num_states += 1
                             new_states.append(new_data)
 
     return new_states

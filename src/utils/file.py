@@ -2,11 +2,11 @@ import csv
 import os
 from datetime import datetime
 
-from game_logic.constants import _BASE_PATH
+from game_logic.constants import DATA_PATH
 
 
 def stats_to_file(filename, elapsed_time, memory_used, states_generated):
-    full_path = os.path.join(_BASE_PATH, 'data', filename)
+    full_path = os.path.join(DATA_PATH, filename)
     os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
     file_exists = os.path.isfile(full_path)

@@ -12,18 +12,20 @@ def generate_pieces():
 
     return [[random.choice(PIECES) for _ in range(3)] for _ in range(33)]
 
-def place_piece(board, piece, position, hint=False):
+def place_piece(game_data, piece, position, hint=False):
     """Places a piece on the board.
 
     Args:
-        board (List[List[int]]): The game board.
+        game_data (GameData): The game data.
         piece (List[Tuple[int, int]]): The piece to place.
         position (Tuple[int, int]): The position to place the piece.
     """
 
+    game_data.recent_piece = (piece, position)
+
     px, py = position
     for x, y in piece:
-        board[py + y][px + x] = 1 if not hint else 0.5
+        game_data.board[py + y][px + x] = 1 if not hint else 0.5
 
 def clear_full_lines(board):
     """Clears full lines and columns from the board.

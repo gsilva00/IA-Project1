@@ -8,13 +8,14 @@ from utils.misc import QuitGameException
 
 class Game:
     """Main game class.
+
     """
 
     def __init__(self):
-        self.state_manager = GameStateManager()
-        self.state_manager.switch_to_base_state(MainMenuState())
         self.screen = pygame.display.set_mode((800, 700))
         self.clock = pygame.time.Clock()
+        self.state_manager = GameStateManager(self.screen)
+        self.state_manager.switch_to_base_state(MainMenuState())
 
     def update(self):
         """Update the game state.
@@ -36,9 +37,9 @@ class Game:
             while True:
                 self.update()
                 self.render()
-                self.clock.tick(30)
+                self.clock.tick(60)
         except QuitGameException:
-            print("Quitting game...")
+            print("=== Quitting game... ===")
             self.state_manager.clear_states()
             pygame.quit()
             sys.exit()
