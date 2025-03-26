@@ -1,4 +1,5 @@
 import time
+import sys
 import tracemalloc
 import queue
 from collections import deque
@@ -54,7 +55,7 @@ class TreeNode:
         Returns:
             bool: True if this node is less than the other node, False otherwise.
         """
-        return self.heuristic_score < other.heuristic_score
+        return self.heuristic_score > other.heuristic_score
 
 class AIAlgorithm:
     def __init__(self, level):
@@ -317,10 +318,10 @@ class GreedySearchAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = queue.PriorityQueue()       # Priority queue for node storing
-        pqueue.put(root)                   # Add the root node to the priority queue
+        pqueue.put(root)                     # Add the root node to the priority queue
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
 
-        while queue:
+        while not pqueue.empty():
             if self.stop_flag:
                 print("Algorithm stopped early")
                 return None
@@ -332,13 +333,19 @@ class GreedySearchAlgorithm(AIAlgorithm):
 
             for child_state in self.operators_func(node.state):
                 if child_state not in visited:
-                    child_node = TreeNode(child_state, node, node.path_cost + 1, node.depth + 1, -greedy_heuristic(root.state, node.state, child_state))
+                    child_node = TreeNode(
+                        child_state,
+                        node,
+                        node.path_cost + 1,
+                        node.depth + 1,
+                        greedy_heuristic(node, node.state, child_state)
+                    )
                     node.add_child(child_node)
 
                     pqueue.put(child_node)
                     visited.add(child_state)
 
-        return None # No valid moves found
+        return None  # No valid moves found
 
 class AStarAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):
