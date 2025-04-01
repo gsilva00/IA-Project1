@@ -5,7 +5,7 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
 from AI.algorithm_registry import AIAlgorithmRegistry
-from AI.heuristics import greedy_heuristic
+from AI.heuristics import greedy_heuristic, a_star_heuristic
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
                                   GREEDY, INFINITE, ITER_DEEP,
                                   WEIGHTED_A_STAR)
@@ -320,21 +320,21 @@ class IterDeepAlgorithm(AIAlgorithm):
                                 child_node = TreeNode(child_state, node, node.path_cost + 1, node.depth + 1)
                                 node.add_child(child_node)
                                 stack.append(child_node)
-                                found_new_nodes = True       # We have added a node to the stack, which means that we could look forward into the graph (not the bottom of the stack).
+                                found_new_nodes = True       # We have added a node to the stack, which means that we could look forward into the graph (not the bottom of the stack)
 
             if found_new_nodes:
                 return "NOT YET EXHAUSTED"
             else:
                 "EXHAUSTED"   # Even if we increase the depth, we wouldn't find any new nodes, as we already searched whole graph
-        #end of depth_limited_search function
+                              # End of depth_limited_search function
 
-        depth_limit = 1                 # normally starts at 0 but it's useless
+        depth_limit = 1
         while True:
             root = TreeNode(self.current_state)
             result = depth_limited_search(root, depth_limit)
             if result == "EXHAUSTED" or result == "STOPPED":  # No new nodes were found, stop searching
                 return None
-            if result == "NOT YET EXHAUSTED":  #when the stack was found empty since we reached the limiting depth and no further children nodes were added
+            if result == "NOT YET EXHAUSTED":  # When the stack was found empty since we reached the limiting depth and no further children nodes were added
                 depth_limit += 1
             else:                              # an answer was found before we reached empty stack
                 return result
@@ -342,7 +342,7 @@ class IterDeepAlgorithm(AIAlgorithm):
 class GreedySearchAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
-        pqueue = q.PriorityQueue()       # Priority queue for node storing
+        pqueue = q.PriorityQueue()           # Priority queue for node storing
         pqueue.put(root)                     # Add the root node to the priority queue
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
 
@@ -374,13 +374,70 @@ class GreedySearchAlgorithm(AIAlgorithm):
 
 class AStarAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):
+        root = TreeNode(self.current_state)  # Root node in the search tree
+        pqueue = q.PriorityQueue()           # Priority queue for node storing
+        pqueue.put(root)                     # Add the root node to the priority queue
+        visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
 
-        raise NotImplementedError("Not implemented yet")
+        while not pqueue.empty():
+            if self.stop_flag:
+                print("Algorithm stopped early")
+                return None
+
+            node = pqueue.get()
+
+            if self.goal_state_func(node.state):
+                return self.order_nodes(node)
+
+            for child_state in self.operators_func(node.state):
+                if child_state not in visited:
+                    child_node = TreeNode(
+                        child_state,
+                        node,
+                        node.path_cost + 1,
+                        node.depth + 1,
+                        a_star_heuristic(node, node.state, child_state) - (node.path_cost + 1)
+                    )
+                    node.add_child(child_node)
+
+                    pqueue.put(child_node)
+                    visited.add(child_state)
+
+        return None  # No valid moves found
 
 class WeightedAStarAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):
+        root = TreeNode(self.current_state)  # Root node in the search tree
+        pqueue = q.PriorityQueue()           # Priority queue for node storing
+        pqueue.put(root)                     # Add the root node to the priority queue
+        visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
+        weight = 2                           # Weight for the heuristic function (can be adjusted)
 
-        raise NotImplementedError("Not implemented yet")
+        while not pqueue.empty():
+            if self.stop_flag:
+                print("Algorithm stopped early")
+                return None
+
+            node = pqueue.get()
+
+            if self.goal_state_func(node.state):
+                return self.order_nodes(node)
+
+            for child_state in self.operators_func(node.state):
+                if child_state not in visited:
+                    child_node = TreeNode(
+                        child_state,
+                        node,
+                        node.path_cost + 1,
+                        node.depth + 1,
+                        a_star_heuristic(node, node.state, child_state) * weight - (node.path_cost + 1)
+                    )
+                    node.add_child(child_node)
+
+                    pqueue.put(child_node)
+                    visited.add(child_state)
+
+        return None  # No valid moves found
 
 # Register algorithms
 AIAlgorithmRegistry.register(BFS, BFSAlgorithm)
