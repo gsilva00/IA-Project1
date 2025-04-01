@@ -8,7 +8,7 @@ from AI.algorithm_registry import AIAlgorithmRegistry
 from AI.heuristics import greedy_heuristic
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
                                   GREEDY, INFINITE, ITER_DEEP,
-                                  UNIFORM_COST, WEIGHTED_A_STAR)
+                                  WEIGHTED_A_STAR)
 from utils.ai import child_states, goal_state, get_num_states
 from utils.file import stats_to_file
 
@@ -43,7 +43,7 @@ class TreeNode:
 
         self.children.append(child_node)
         child_node.parent = self    # Constructor can already do this, it's partially redundant but that's okay
-    
+
     def __lt__(self, other):
         """Defines the less-than comparison for TreeNode objects.
         This is used by the priority queue to compare nodes.
@@ -63,10 +63,11 @@ class AIAlgorithm:
 
         self.goal_state_func = goal_state if level != INFINITE else None # TODO: Implement goal state function for infinite level (EXTRA FEATURE)
         self.operators_func = child_states
+        self.time_callback_func = None
+        self.res_callback_func = None
 
         self.stop_flag = False
         self.future = None
-        self.callback = None
         self.result = None
 
         print(f"[AIAlgorithm] Initialized: {type(self).__name__}")
@@ -81,10 +82,10 @@ class AIAlgorithm:
         if self.future is not None:
             self.future.cancel()
             self.future = None
-        self.callback = None
+        self.res_callback_func = None
         self.result = None
 
-    def get_next_move(self, game_data, callback=None, reset=False):
+    def get_next_move(self, game_data, time_callback_func=None, res_callback_func=None, reset=False):
         """Start running the AI algorithm in the background (separate thread)
         Calls the callback function with the result when it's done.
 
@@ -96,13 +97,14 @@ class AIAlgorithm:
         """
 
         self.stop_flag = False
-        self.callback = callback
+        self.time_callback_func = time_callback_func
+        self.res_callback_func = res_callback_func
 
         # Reset the AI algorithm results (when current state of the game doesn't match stat expected for result of the algorithm to be used)
         if reset:
-            self.result = None
-            self.future = None
             self.next_state = None
+            self.future = None
+            self.result = None
 
         # Needed in _execute_algorithm() - when the algorithm is actually run (not every time get_next_move() is called)
         self.current_state = game_data
@@ -113,14 +115,17 @@ class AIAlgorithm:
                 print(f"[{type(self).__name__}] Submitting algorithm...")
                 self.future = executor.submit(self.run_algorithm)
                 self.future.add_done_callback(self._on_algorithm_done)
+
+                if self.time_callback_func is not None:
+                    self.time_callback_func()
             else:
                 print(f"[{type(self).__name__}] Algorithm already running.")
         else:
             print(f"[{type(self).__name__}] Using stored result.")
             piece_index, piece_position = self._process_result()
-            status = AI_FOUND if piece_index is None or piece_position is None else AI_NOT_FOUND
-            if self.callback is not None:
-                self.callback(status, piece_index, piece_position)
+            status = AI_FOUND if piece_index is not None and piece_position is not None else AI_NOT_FOUND
+            if self.res_callback_func is not None:
+                self.res_callback_func(status, piece_index, piece_position)
 
     def _on_algorithm_done(self, future):
         """Callback function for when the algorithm has finished running.
@@ -130,19 +135,20 @@ class AIAlgorithm:
             future (Future): The future object that contains the result of the algorithm.
         """
         print(f"[{type(self).__name__}] Algorithm done.")
+        self.time_callback_func()
 
         self.result = future.result()
 
         if self.result is None:
-            if self.callback is not None:
-                self.callback(AI_NOT_FOUND, None, None)
+            if self.res_callback_func is not None:
+                self.res_callback_func(AI_NOT_FOUND, None, None)
             return
 
         piece_index, piece_position = self._process_result()
         status = AI_FOUND if piece_index is not None and piece_position is not None else AI_NOT_FOUND
 
-        if self.callback is not None:
-            self.callback(status, piece_index, piece_position)
+        if self.res_callback_func is not None:
+            self.res_callback_func(status, piece_index, piece_position)
 
     def _process_result(self):
         self.next_state = self.result[0].state
@@ -150,7 +156,9 @@ class AIAlgorithm:
         self.result = self.result[1:] if len(self.result) > 1 else None
 
         for i, piece in enumerate(self.current_state.pieces): # TODO: Change this because what if the piece played in the next state is the 2nd one, which is the same as the 1st one, it returns the index of the first one. Shouldn't be a problem, because the pieces are same. Still.
+            print(f"Piece {i}: {piece}")
             if self.next_state.recent_piece[0] == piece:
+                print(f"Piece index: {i}, Piece position: {self.next_state.recent_piece[1]}")
                 return i, self.next_state.recent_piece[1]
 
     def run_algorithm(self):
@@ -302,7 +310,7 @@ class IterDeepAlgorithm(AIAlgorithm):
                 node = stack.pop()
                 if node.state not in visited:
                     visited.add(node.state)
-                    
+
                     if self.goal_state_func(node.state):
                         return self.order_nodes(node)
 
@@ -313,7 +321,7 @@ class IterDeepAlgorithm(AIAlgorithm):
                                 node.add_child(child_node)
                                 stack.append(child_node)
                                 found_new_nodes = True       # We have added a node to the stack, which means that we could look forward into the graph (not the bottom of the stack).
-            
+
             if found_new_nodes:
                 return "NOT YET EXHAUSTED"
             else:
@@ -329,16 +337,7 @@ class IterDeepAlgorithm(AIAlgorithm):
             if result == "NOT YET EXHAUSTED":  #when the stack was found empty since we reached the limiting depth and no further children nodes were added
                 depth_limit += 1
             else:                              # an answer was found before we reached empty stack
-                return result  
-   
-
-
-        
-
-class UniformCostAlgorithm(AIAlgorithm):
-    def _execute_algorithm(self):
-
-        raise NotImplementedError("Not implemented yet")
+                return result
 
 class GreedySearchAlgorithm(AIAlgorithm):
     def _execute_algorithm(self):
@@ -387,7 +386,6 @@ class WeightedAStarAlgorithm(AIAlgorithm):
 AIAlgorithmRegistry.register(BFS, BFSAlgorithm)
 AIAlgorithmRegistry.register(DFS, DFSAlgorithm)
 AIAlgorithmRegistry.register(ITER_DEEP, IterDeepAlgorithm)
-AIAlgorithmRegistry.register(UNIFORM_COST, UniformCostAlgorithm)
 AIAlgorithmRegistry.register(GREEDY, GreedySearchAlgorithm)
 AIAlgorithmRegistry.register(A_STAR, AStarAlgorithm)
 AIAlgorithmRegistry.register(WEIGHTED_A_STAR, WeightedAStarAlgorithm)

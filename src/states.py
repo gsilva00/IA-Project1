@@ -7,8 +7,7 @@ import pygame
 from AI.algorithm_registry import get_ai_algorithm, get_ai_algorithm_id
 from AI.algorithms import (AIAlgorithm, AStarAlgorithm, BFSAlgorithm,
                            DFSAlgorithm, GreedySearchAlgorithm,
-                           IterDeepAlgorithm, UniformCostAlgorithm,
-                           WeightedAStarAlgorithm)
+                           IterDeepAlgorithm, WeightedAStarAlgorithm)
 from game_data import GameData
 from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND,
                                   BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH,
@@ -16,12 +15,13 @@ from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND,
                                   FONT_PATH, FONT_TEXT_SIZE,
                                   FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE,
                                   GAME_ICON_MENU_PATH, GRAY, GREEDY,
-                                  GRID_OFFSET_Y, HINT_ICON_PATH, HUMAN,
-                                  INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2,
-                                  LEVEL_3, LEVELS, ORANGE, SCREEN_HEIGHT,
-                                  SCREEN_WIDTH, UNIFORM_COST, WEIGHTED_A_STAR,
-                                  WHITE, PIECES_LIST_OFFSET_X_CELLS, PIECES_LIST_OFFSET_Y_CELLS,
-                                  PIECES_LIST_BETWEEN_OFFSET_X_CELLS, GRID_OFFSET_X)
+                                  GRID_OFFSET_X, GRID_OFFSET_Y, HINT_ICON_PATH,
+                                  HUMAN, INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2,
+                                  LEVEL_3, LEVELS, ORANGE,
+                                  PIECES_LIST_BETWEEN_OFFSET_X_CELLS,
+                                  PIECES_LIST_OFFSET_X_CELLS,
+                                  PIECES_LIST_OFFSET_Y_CELLS, SCREEN_HEIGHT,
+                                  SCREEN_WIDTH, WEIGHTED_A_STAR, WHITE)
 from game_logic.rules import (clear_full_lines, is_valid_position,
                               no_more_valid_moves, place_piece)
 from utils.misc import QuitGameException, ScreenWrapper
@@ -349,7 +349,6 @@ class SelectAIAlgorithmState(GameState):
         self.bfs_rect = None
         self.dfs_rect = None
         self.iter_deep_rect = None
-        self.uniform_cost_rect = None
         self.greedy_rect = None
         self.a_star_rect = None
         self.weighted_a_star_rect = None
@@ -370,8 +369,6 @@ class SelectAIAlgorithmState(GameState):
                     game.state_manager.push_state(SelectModeState(self.player, DFS))
                 elif self.iter_deep_rect.collidepoint(event.pos):
                     game.state_manager.push_state(SelectModeState(self.player, ITER_DEEP))
-                elif self.uniform_cost_rect.collidepoint(event.pos):
-                    game.state_manager.push_state(SelectModeState(self.player, UNIFORM_COST))
                 elif self.greedy_rect.collidepoint(event.pos):
                     game.state_manager.push_state(SelectModeState(self.player, GREEDY))
                 elif self.a_star_rect.collidepoint(event.pos):
@@ -406,14 +403,12 @@ class SelectAIAlgorithmState(GameState):
                     elif self.selected_option == 2:
                         game.state_manager.push_state(SelectModeState(self.player, ITER_DEEP))
                     elif self.selected_option == 3:
-                        game.state_manager.push_state(SelectModeState(self.player, UNIFORM_COST))
-                    elif self.selected_option == 4:
                         game.state_manager.push_state(SelectModeState(self.player, GREEDY))
-                    elif self.selected_option == 5:
+                    elif self.selected_option == 4:
                         game.state_manager.push_state(SelectModeState(self.player, A_STAR))
-                    elif self.selected_option == 6:
+                    elif self.selected_option == 5:
                         game.state_manager.push_state(SelectModeState(self.player, WEIGHTED_A_STAR))
-                    elif self.selected_option == 7:
+                    elif self.selected_option == 6:
                         game.state_manager.pop_state()
 
     def render(self, game):
@@ -428,7 +423,6 @@ class SelectAIAlgorithmState(GameState):
         bfs_text = font.render('Breath First Search', True, BROWN)
         dfs_text = font.render('Depth First Search', True, BROWN)
         iter_deep_text = font.render('Iterative Deepening', True, BROWN)
-        uniform_cost_text = font.render('Uniform Cost Search', True, BROWN)
         greedy_text = font.render('Greedy Search', True, BROWN)
         a_star_text = font.render('A*', True, BROWN)
         weighted_a_star_text = font.render('Weighted A*', True, BROWN)
@@ -444,10 +438,9 @@ class SelectAIAlgorithmState(GameState):
         self.bfs_rect = bfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
         self.dfs_rect = dfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.85))
         self.iter_deep_rect = iter_deep_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.67))
-        self.uniform_cost_rect = uniform_cost_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.52))
-        self.greedy_rect = greedy_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.4))
-        self.a_star_rect = a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.30))
-        self.weighted_a_star_rect = weighted_a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.21))
+        self.greedy_rect = greedy_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.52))
+        self.a_star_rect = a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.4))
+        self.weighted_a_star_rect = weighted_a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.3))
         self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.05))
 
         background = pygame.image.load(BACKGROUND_MENU_PATH)
@@ -460,27 +453,24 @@ class SelectAIAlgorithmState(GameState):
             self.selected_option = 1
         elif self.iter_deep_rect.collidepoint(mouse_pos):
             self.selected_option = 2
-        elif self.uniform_cost_rect.collidepoint(mouse_pos):
-            self.selected_option = 3
         elif self.greedy_rect.collidepoint(mouse_pos):
-            self.selected_option = 4
+            self.selected_option = 3
         elif self.a_star_rect.collidepoint(mouse_pos):
-            self.selected_option = 5
+            self.selected_option = 4
         elif self.weighted_a_star_rect.collidepoint(mouse_pos):
-            self.selected_option = 6
+            self.selected_option = 5
         elif self.back_rect.collidepoint(mouse_pos):
-            self.selected_option = 7
+            self.selected_option = 6
         elif not self.keyboard_active:
             self.selected_option = None
 
         bfs_text = font.render('Breath First Search', True, ORANGE if self.selected_option == 0 else WHITE)
         dfs_text = font.render('Depth First Search', True, ORANGE if self.selected_option == 1 else WHITE)
         iter_deep_text = font.render('Iterative Deepening', True, ORANGE if self.selected_option == 2 else WHITE)
-        uniform_cost_text = font.render('Uniform Cost Search', True, ORANGE if self.selected_option == 3 else WHITE)
-        greedy_text = font.render('Greedy Search', True, ORANGE if self.selected_option == 4 else WHITE)
-        a_star_text = font.render('A*', True, ORANGE if self.selected_option == 5 else WHITE)
-        weighted_a_star_text = font.render('Weighted A*', True, ORANGE if self.selected_option == 6 else WHITE)
-        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 7 else WHITE)
+        greedy_text = font.render('Greedy Search', True, ORANGE if self.selected_option == 3 else WHITE)
+        a_star_text = font.render('A*', True, ORANGE if self.selected_option == 4 else WHITE)
+        weighted_a_star_text = font.render('Weighted A*', True, ORANGE if self.selected_option == 5 else WHITE)
+        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 6 else WHITE)
 
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
@@ -489,7 +479,6 @@ class SelectAIAlgorithmState(GameState):
         game.screen.blit(bfs_text, self.bfs_rect)
         game.screen.blit(dfs_text, self.dfs_rect)
         game.screen.blit(iter_deep_text, self.iter_deep_rect)
-        game.screen.blit(uniform_cost_text, self.uniform_cost_rect)
         game.screen.blit(greedy_text, self.greedy_rect)
         game.screen.blit(a_star_text, self.a_star_rect)
         game.screen.blit(weighted_a_star_text, self.weighted_a_star_rect)
@@ -740,24 +729,23 @@ class GameplayState(GameState):
         self.ai_algorithm = get_ai_algorithm(ai_algorithm, level)
         self.level = level
 
-        custom_game_data = GameData(level=1)
-        custom_game_data.board = [
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [2, 1, 1, 1, 1, 1, 1, 0],
-        ]
+        # custom_game_data = GameData(level=1)
+        # custom_game_data.board = [
+        #     [0, 0, 0, 0, 0, 0, 0, 0],
+        #     [0, 0, 0, 0, 0, 0, 0, 0],
+        #     [0, 0, 0, 0, 0, 0, 0, 0],
+        #     [0, 0, 0, 0, 0, 0, 0, 0],
+        #     [0, 0, 0, 0, 0, 0, 0, 0],
+        #     [0, 0, 0, 0, 0, 0, 0, 0],
+        #     [0, 0, 0, 0, 0, 0, 0, 0],
+        #     [2, 1, 1, 1, 1, 1, 1, 0],
+        # ]
 
-        custom_game_data.pieces = [[(0, 0)]]  # A single block piece
-        custom_game_data.following_pieces = []
-        custom_game_data.blocks_to_break = 1
-
-
-        self.game_data = custom_game_data         #GameData(level)
+        # custom_game_data.pieces = [[(0, 0)]]  # A single block piece
+        # custom_game_data.following_pieces = []
+        # custom_game_data.blocks_to_break = 1
+        # self.game_data = custom_game_data
+        self.game_data = GameData(self.level)
         self.score = 0
         self.selected_index = None
         self.selected_piece = None
@@ -774,8 +762,18 @@ class GameplayState(GameState):
 
         self.done = None
 
-    def on_ai_move_done(self, status, piece_index, piece_position):
-        """Callback function for AI algorithm to notify/update state when it has found a move
+    def _toggle_ai_running_time(self):
+        """Toggle the AI running time to stop or start the timer
+
+        """
+
+        if self.ai_running_start_time is None:
+            self.ai_running_start_time = time.time()
+        else:
+            self.ai_running_start_time = None
+
+    def _on_ai_algo_done(self, status, piece_index, piece_position):
+        """Callback function for AI algorithm to notify/update state when it has finished
 
         Args:
             status (int): Status of the AI algorithm (AI_FOUND or AI_NOT_FOUND)
@@ -785,7 +783,6 @@ class GameplayState(GameState):
 
         if status == AI_FOUND:
             print("AI found a move")
-            self.ai_running_start_time = None
 
             if self.player == HUMAN:
                 self.ai_hint_index = piece_index
@@ -807,18 +804,17 @@ class GameplayState(GameState):
 
         elif status == AI_NOT_FOUND:
             print("AI didn't find a move")
-            self.ai_running_start_time = None
+
 
     def enter(self, screen):
         print("Starting Gameplay")
 
-        # Start running the AI algorithm AS SOON AS WE ENTER THE GAMEPLAY STATE
+        # Start running the AI algorithm AS SOON AS WE ENTER THE GAMEPLAY STATE (but avoid recomputing if there are results already)
         if (
             (self.player == HUMAN and (not self.ai_hint_index or not self.ai_hint_position)) or
             (self.player == AI and (not self.ai_initial_pos or not self.ai_current_pos or not self.ai_target_pos))
         ):
-            self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
-            self.ai_running_start_time = time.time()
+            self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
 
     def update(self, game, events):
         if self.player == HUMAN:
@@ -891,21 +887,19 @@ class GameplayState(GameState):
                             self.score += lines_cleared
 
                         if not self.done:
-                            # Player made move, state changed, prepare next hint
+                            # Player made move, so state changed, then prepare next hint
                             if (
                                     self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
                                     self.selected_index == self.ai_hint_index and px-4 == self.ai_hint_position[0] and py == self.ai_hint_position[1]
                             ):
                                 # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
-                                self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done)
-                                self.ai_running_start_time = time.time()
+                                self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
                             elif (
                                     self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
                                     (self.selected_index != self.ai_hint_index or px-4 != self.ai_hint_position[0] or py != self.ai_hint_position[1])
                             ):
                                 # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
-                                self.ai_algorithm.get_next_move(self.game_data, self.on_ai_move_done, True)
-                                self.ai_running_start_time = time.time()
+                                self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done, True)
 
                             # All pieces placed (all None), generate new ones
                             if not any(self.game_data.pieces):
@@ -913,6 +907,15 @@ class GameplayState(GameState):
 
                             if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
                                 self.ai_algorithm.stop()
+                                self.done = True
+
+                                # push_state() will call exit() of this state, which EXCEPTIONALLY calls render() to render the final state, so these variables need to be reset early
+                                self.selected_index = None
+                                self.selected_piece = None
+                                self.hint_pressed = False
+                                self.ai_hint_index = None
+                                self.ai_hint_position = None
+
                                 game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
                         # Clear the current hint
@@ -945,6 +948,7 @@ class GameplayState(GameState):
                     px, py = (self.ai_target_pos[0] - GRID_OFFSET_X) // CELL_SIZE, (self.ai_target_pos[1] // CELL_SIZE) - GRID_OFFSET_Y
                     place_piece(self.game_data, self.selected_piece, (px, py))
                     lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
+                    # time.sleep(0.3)  # Add a small delay to better visualize the AI's move
 
                     # Levels mode
                     if self.level != INFINITE:
@@ -973,16 +977,29 @@ class GameplayState(GameState):
 
                         if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
                             self.ai_algorithm.stop()
+                            self.done = True
+
+                            # push_state() will call exit() of this state, which EXCEPTIONALLY calls render() to render the final state, so these variables need to be reset early
+                            self.selected_piece = None
+                            self.ai_initial_pos = None
+                            self.ai_current_pos = None
+                            self.ai_target_pos = None
+
                             game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
 
                     self.selected_piece = None
                     self.ai_initial_pos = None
                     self.ai_current_pos = None
                     self.ai_target_pos = None
+
+                    if not self.done:
+                        self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
+
                     self.done = False
             else:
-                # AI didn't find a move
-                game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
+                # AI didn't find a move (DONT KNOW WHAT TO DO HERE) TODO
+                # game.state_manager.push_state(GameOverState(self.score, self.player, get_ai_algorithm_id(self.ai_algorithm), self.level))
+                pass
         else:
             # Do nothing, the AI is still running
             pass
