@@ -1387,7 +1387,7 @@ class LevelCompleteState(GameState):
         font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
         score_text = font.render(f'Score: {self.score}', True, ORANGE)
         next_level_text = font.render('Next Level', True, WHITE)
-        play_next_text = font.render('Retry Level', True, WHITE)
+        play_next_text = font.render('Play Again', True, WHITE)
         back_text = font.render('Go Back', True, WHITE)
 
         # Non-interactable rectangles
@@ -1413,7 +1413,7 @@ class LevelCompleteState(GameState):
 
         if self.level != LEVELS[-1]:
             next_level_text = font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
-        play_next_text = font.render('Play Next', True, ORANGE if self.selected_option == 1 else WHITE)
+        play_next_text = font.render('Play Again', True, ORANGE if self.selected_option == 1 else WHITE)
         back_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
 
         game.screen.blit(level_complete_text, level_complete_rect)
