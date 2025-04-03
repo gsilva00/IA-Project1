@@ -5,11 +5,10 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
 from AI.algorithm_registry import AIAlgorithmRegistry
-from AI.heuristics import greedy_heuristic, a_star_heuristic
+from AI.heuristics import a_star_heuristic, greedy_heuristic
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
-                                  GREEDY, INFINITE, ITER_DEEP,
-                                  WEIGHTED_A_STAR)
-from utils.ai import child_states, goal_state, get_num_states
+                                  GREEDY, INFINITE, ITER_DEEP, WEIGHTED_A_STAR)
+from utils.ai import child_states, get_num_states, goal_state
 from utils.file import stats_to_file
 
 

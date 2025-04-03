@@ -183,9 +183,6 @@ class MainMenuState(GameState):
 
     """
 
-    def __init__(self):
-        self.alpha = 255  # For transition effect
-
     def enter(self, screen):
         print("Entering Main Menu")
 
@@ -197,18 +194,15 @@ class MainMenuState(GameState):
                 game.state_manager.push_state(SelectPlayerState())
 
     def render(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        title_text_back = font.render('Wood Block', True, BROWN)
-        title_text_middle = font.render('Wood Block', True, ORANGE)
-        title_text_front = font.render('Wood Block', True, WHITE)
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        start_text = font.render('* Click Anywhere to Start *', True, WHITE)
-
         background = pygame.image.load(BACKGROUND_MENU_PATH)
-        game.screen.blit(background, (0, 0))
-
         icon_menu = pygame.image.load(GAME_ICON_MENU_PATH)
-        game.screen.blit(icon_menu, (SCREEN_WIDTH/2 - 100 ,SCREEN_HEIGHT/2 - 100))
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+
+        title_text_back = title_font.render('Wood Block', True, BROWN)
+        title_text_middle = title_font.render('Wood Block', True, ORANGE)
+        title_text_front = title_font.render('Wood Block', True, WHITE)
+        start_text = text_font.render('* Click Anywhere to Start *', True, WHITE)
 
         # Non-interactable rectangles
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
@@ -216,6 +210,8 @@ class MainMenuState(GameState):
         title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
         start_rect = start_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.35))
 
+        game.screen.blit(background, (0, 0))
+        game.screen.blit(icon_menu, (SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 100))
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
@@ -240,6 +236,8 @@ class SelectPlayerState(GameState):
 
     def enter(self, screen):
         print("Entering Select Player Menu")
+        self.keyboard_active = False
+        self.selected_option = None
 
     def update(self, game, events):
         for event in events:
@@ -260,7 +258,6 @@ class SelectPlayerState(GameState):
 
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
                         self.selected_option = 0
@@ -279,19 +276,31 @@ class SelectPlayerState(GameState):
                     elif self.selected_option == 2:
                         game.state_manager.pop_state()
 
-    def render(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        title_text_back = font.render('Wood Block', True, BROWN)
-        title_text_middle = font.render('Wood Block', True, ORANGE)
-        title_text_front = font.render('Wood Block', True, WHITE)
+        # Update selected option based on mouse position
+        # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
+        mouse_pos = pygame.mouse.get_pos()
+        if self.player_rect.collidepoint(mouse_pos):
+            self.selected_option = 0
+        elif self.ai_rect.collidepoint(mouse_pos):
+            self.selected_option = 1
+        elif self.back_rect.collidepoint(mouse_pos):
+            self.selected_option = 2
+        elif not self.keyboard_active:
+            self.selected_option = None
 
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        subtitle_text = font.render('Select The Player', True, BROWN)
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        player_text = font.render('Human', True, WHITE)
-        ai_text = font.render('AI', True, WHITE)
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        back_text = font.render('Go Back', True, WHITE)
+    def render(self, game):
+        background = pygame.image.load(BACKGROUND_MENU_PATH)
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        # text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+
+        title_text_back = title_font.render('Wood Block', True, BROWN)
+        title_text_middle = title_font.render('Wood Block', True, ORANGE)
+        title_text_front = title_font.render('Wood Block', True, WHITE)
+        subtitle_text = subtitle_font.render('Select The Player', True, BROWN)
+        player_text = subtitle_font.render('Human', True, ORANGE if self.selected_option == 0 else WHITE)
+        ai_text = subtitle_font.render('AI', True, ORANGE if self.selected_option == 1 else WHITE)
+        back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
 
         # Non-interactable rectangles
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
@@ -304,23 +313,7 @@ class SelectPlayerState(GameState):
         self.ai_rect = ai_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
         self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.20))
 
-        background = pygame.image.load(BACKGROUND_MENU_PATH)
         game.screen.blit(background, (0, 0))
-
-        mouse_pos = pygame.mouse.get_pos()
-        if self.player_rect.collidepoint(mouse_pos):
-            self.selected_option = 0
-        elif self.ai_rect.collidepoint(mouse_pos):
-            self.selected_option = 1
-        elif self.back_rect.collidepoint(mouse_pos):
-            self.selected_option = 2
-        elif not self.keyboard_active:
-            self.selected_option = None
-
-        player_text = font.render('Player', True, ORANGE if self.selected_option == 0 else WHITE)
-        ai_text = font.render('AI', True, ORANGE if self.selected_option == 1 else WHITE)
-        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
-
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
@@ -345,7 +338,6 @@ class SelectAIAlgorithmState(GameState):
 
         self.player = player
 
-        # TODO: Define all rectangles for AI algorithm selection
         self.bfs_rect = None
         self.dfs_rect = None
         self.iter_deep_rect = None
@@ -356,6 +348,8 @@ class SelectAIAlgorithmState(GameState):
 
     def enter(self, screen):
         print("Entering Select AI Algorithm Menu")
+        self.keyboard_active = False
+        self.selected_option = None
 
     def update(self, game, events):
         for event in events:
@@ -384,17 +378,16 @@ class SelectAIAlgorithmState(GameState):
 
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option - 1) % 8
+                        self.selected_option = (self.selected_option - 1) % 7
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option + 1) % 8
+                        self.selected_option = (self.selected_option + 1) % 7
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
                         game.state_manager.push_state(SelectModeState(self.player, BFS))
@@ -411,41 +404,8 @@ class SelectAIAlgorithmState(GameState):
                     elif self.selected_option == 6:
                         game.state_manager.pop_state()
 
-    def render(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        title_text_back = font.render('Wood Block', True, BROWN)
-        title_text_middle = font.render('Wood Block', True, ORANGE)
-        title_text_front = font.render('Wood Block', True, WHITE)
-
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        subtitle_text = font.render('Select The AI Algorithm', True, BROWN)
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        bfs_text = font.render('Breath First Search', True, BROWN)
-        dfs_text = font.render('Depth First Search', True, BROWN)
-        iter_deep_text = font.render('Iterative Deepening', True, BROWN)
-        greedy_text = font.render('Greedy Search', True, BROWN)
-        a_star_text = font.render('A*', True, BROWN)
-        weighted_a_star_text = font.render('Weighted A*', True, BROWN)
-        back_text = font.render('Go Back', True, BROWN)
-
-        # Non-interactable rectangles
-        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
-        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
-        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
-
-        # Interactable rectangles
-        self.bfs_rect = bfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
-        self.dfs_rect = dfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.85))
-        self.iter_deep_rect = iter_deep_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.67))
-        self.greedy_rect = greedy_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.52))
-        self.a_star_rect = a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.4))
-        self.weighted_a_star_rect = weighted_a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.3))
-        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.05))
-
-        background = pygame.image.load(BACKGROUND_MENU_PATH)
-        game.screen.blit(background, (0, 0))
-
+        # Update selected option based on mouse position
+        # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
         mouse_pos = pygame.mouse.get_pos()
         if self.bfs_rect.collidepoint(mouse_pos):
             self.selected_option = 0
@@ -464,14 +424,40 @@ class SelectAIAlgorithmState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-        bfs_text = font.render('Breath First Search', True, ORANGE if self.selected_option == 0 else WHITE)
-        dfs_text = font.render('Depth First Search', True, ORANGE if self.selected_option == 1 else WHITE)
-        iter_deep_text = font.render('Iterative Deepening', True, ORANGE if self.selected_option == 2 else WHITE)
-        greedy_text = font.render('Greedy Search', True, ORANGE if self.selected_option == 3 else WHITE)
-        a_star_text = font.render('A*', True, ORANGE if self.selected_option == 4 else WHITE)
-        weighted_a_star_text = font.render('Weighted A*', True, ORANGE if self.selected_option == 5 else WHITE)
-        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 6 else WHITE)
+    def render(self, game):
+        background = pygame.image.load(BACKGROUND_MENU_PATH)
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
 
+        title_text_back = title_font.render('Wood Block', True, BROWN)
+        title_text_middle = title_font.render('Wood Block', True, ORANGE)
+        title_text_front = title_font.render('Wood Block', True, WHITE)
+        subtitle_text = subtitle_font.render('Select The AI Algorithm', True, BROWN)
+        bfs_text = text_font.render('Breadth First Search', True, ORANGE if self.selected_option == 0 else WHITE)
+        dfs_text = text_font.render('Depth First Search', True, ORANGE if self.selected_option == 1 else WHITE)
+        iter_deep_text = text_font.render('Iterative Deepening', True, ORANGE if self.selected_option == 2 else WHITE)
+        greedy_text = text_font.render('Greedy Search', True, ORANGE if self.selected_option == 3 else WHITE)
+        a_star_text = text_font.render('A*', True, ORANGE if self.selected_option == 4 else WHITE)
+        weighted_a_star_text = text_font.render('Weighted A*', True, ORANGE if self.selected_option == 5 else WHITE)
+        back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 6 else WHITE)
+
+        # Non-interactable rectangles
+        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
+
+        # Interactable rectangles
+        self.bfs_rect = bfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
+        self.dfs_rect = dfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.85))
+        self.iter_deep_rect = iter_deep_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.67))
+        self.greedy_rect = greedy_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.52))
+        self.a_star_rect = a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.4))
+        self.weighted_a_star_rect = weighted_a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.3))
+        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.17))
+
+        game.screen.blit(background, (0, 0))
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
@@ -508,11 +494,14 @@ class SelectModeState(GameState):
 
     def enter(self, screen):
         print("Entering Select Mode Menu")
+        self.keyboard_active = False
+        self.selected_option = None
 
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
                 raise QuitGameException()
+            # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.levels_rect.collidepoint(event.pos):
                     game.state_manager.push_state(SelectLevelState(self.player, self.ai_algorithm))
@@ -520,13 +509,13 @@ class SelectModeState(GameState):
                     game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, INFINITE))
                 elif self.quit_rect.collidepoint(event.pos):
                     game.state_manager.pop_state()
+            # Keyboard events
             elif event.type == pygame.KEYDOWN:
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
                         self.selected_option = 0
@@ -545,34 +534,8 @@ class SelectModeState(GameState):
                     elif self.selected_option == 2:
                         game.state_manager.pop_state()
 
-    def render(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        title_text_back = font.render('Wood Block', True, BROWN)
-        title_text_middle = font.render('Wood Block', True, ORANGE)
-        title_text_front = font.render('Wood Block', True, WHITE)
-
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        subtitle_text = font.render('Select The Game Mode', True, BROWN)
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        levels_text = font.render('Levels', True, WHITE)
-        infinite_text = font.render('Infinite', True, WHITE)
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        quit_text = font.render('Go Back', True, WHITE)
-
-        # Non-interactable rectangles
-        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
-        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
-        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
-
-        # Interactable rectangles
-        self.levels_rect = levels_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
-        self.infinite_rect = infinite_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
-        self.quit_rect = quit_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.20))
-
-        background = pygame.image.load(BACKGROUND_MENU_PATH)
-        game.screen.blit(background, (0, 0))
-
+        # Update selected option based on mouse position
+        # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
         mouse_pos = pygame.mouse.get_pos()
         if self.levels_rect.collidepoint(mouse_pos):
             self.selected_option = 0
@@ -583,17 +546,39 @@ class SelectModeState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-        levels_text = font.render('Levels', True, ORANGE if self.selected_option == 0 else WHITE)
-        infinite_text = font.render('Infinite', True, ORANGE if self.selected_option == 1 else WHITE)
-        quit_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
+    def render(self, game):
+        background = pygame.image.load(BACKGROUND_MENU_PATH)
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
 
+        title_text_back = title_font.render('Wood Block', True, BROWN)
+        title_text_middle = title_font.render('Wood Block', True, ORANGE)
+        title_text_front = title_font.render('Wood Block', True, WHITE)
+        subtitle_text = subtitle_font.render('Select The Game Mode', True, BROWN)
+        levels_text = text_font.render('Levels', True, ORANGE if self.selected_option == 0 else WHITE)
+        infinite_text = text_font.render('Infinite', True, ORANGE if self.selected_option == 1 else WHITE)
+        back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
+
+        # Non-interactable rectangles
+        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
+
+        # Interactable rectangles
+        self.levels_rect = levels_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
+        self.infinite_rect = infinite_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
+        self.quit_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.20))
+
+        game.screen.blit(background, (0, 0))
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
         game.screen.blit(subtitle_text,subtitle_rect)
         game.screen.blit(levels_text, self.levels_rect)
         game.screen.blit(infinite_text, self.infinite_rect)
-        game.screen.blit(quit_text, self.quit_rect)
+        game.screen.blit(back_text, self.quit_rect)
         pygame.display.flip()
 
     def exit(self, screen):
@@ -617,6 +602,8 @@ class SelectLevelState(GameState):
 
     def enter(self, screen):
         print("Entering Select Level")
+        self.keyboard_active = False
+        self.selected_option = None
 
     def update(self, game, events):
         for event in events:
@@ -639,7 +626,6 @@ class SelectLevelState(GameState):
 
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
                         self.selected_option = 0
@@ -660,18 +646,34 @@ class SelectLevelState(GameState):
                     elif self.selected_option == 3:
                         game.state_manager.pop_state()
 
-    def render(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        title_text_back = font.render('Wood Block', True, BROWN)
-        title_text_middle = font.render('Wood Block', True, ORANGE)
-        title_text_front = font.render('Wood Block', True, WHITE)
+        # Update selected option based on mouse position
+        # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
+        mouse_pos = pygame.mouse.get_pos()
+        if self.level_1_rect.collidepoint(mouse_pos):
+            self.selected_option = 0
+        elif self.level_2_rect.collidepoint(mouse_pos):
+            self.selected_option = 1
+        elif self.level_3_rect.collidepoint(mouse_pos):
+            self.selected_option = 2
+        elif self.back_rect.collidepoint(mouse_pos):
+            self.selected_option = 3
+        elif not self.keyboard_active:
+            self.selected_option = None
 
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
-        subtitle_text = font.render('Select The Game Level', True, BROWN)
-        level_1_text = font.render('Level 1', True, WHITE)
-        level_2_text = font.render('Level 2', True, WHITE)
-        level_3_text = font.render('Level 3', True, WHITE)
-        back_text = font.render('Go Back', True, WHITE)
+    def render(self, game):
+        background = pygame.image.load(BACKGROUND_MENU_PATH)
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+
+        title_text_back = title_font.render('Wood Block', True, BROWN)
+        title_text_middle = title_font.render('Wood Block', True, ORANGE)
+        title_text_front = title_font.render('Wood Block', True, WHITE)
+        subtitle_text = subtitle_font.render('Select The Game Level', True, BROWN)
+        level_1_text = text_font.render('Level 1', True, ORANGE if self.selected_option == 0 else WHITE)
+        level_2_text = text_font.render('Level 2', True, ORANGE if self.selected_option == 1 else WHITE)
+        level_3_text = text_font.render('Level 3', True, ORANGE if self.selected_option == 2 else WHITE)
+        back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 3 else WHITE)
 
         # Non-interactable rectangles
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
@@ -685,26 +687,7 @@ class SelectLevelState(GameState):
         self.level_3_rect = level_3_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.42))
         self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.2))
 
-        background = pygame.image.load(BACKGROUND_MENU_PATH)
         game.screen.blit(background, (0, 0))
-
-        mouse_pos = pygame.mouse.get_pos()
-        if self.level_1_rect.collidepoint(mouse_pos):
-            self.selected_option = 0
-        elif self.level_2_rect.collidepoint(mouse_pos):
-            self.selected_option = 1
-        elif self.level_3_rect.collidepoint(mouse_pos):
-            self.selected_option = 2
-        elif self.back_rect.collidepoint(mouse_pos):
-            self.selected_option = 3
-        elif not self.keyboard_active:
-            self.selected_option = None
-
-        level_1_text = font.render('Level 1', True, ORANGE if self.selected_option == 0 else WHITE)
-        level_2_text = font.render('Level 2', True, ORANGE if self.selected_option == 1 else WHITE)
-        level_3_text = font.render('Level 3', True, ORANGE if self.selected_option == 2 else WHITE)
-        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 3 else WHITE)
-
         game.screen.blit(title_text_back, title_rect_back)
         game.screen.blit(title_text_middle, title_rect_middle)
         game.screen.blit(title_text_front, title_rect_front)
@@ -1011,11 +994,11 @@ class GameplayState(GameState):
             self.render_ai(game)
 
     def render_player(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_HINT_SIZE)
         background = pygame.image.load(BACKGROUND_GAME_PATH)
+        hint_icon = pygame.image.load(HINT_ICON_PATH).convert_alpha() # With transparency
+        font = pygame.font.Font(FONT_PATH, FONT_HINT_SIZE)
 
         hint_text = font.render('H', True, WHITE)
-        hint_icon = pygame.image.load(HINT_ICON_PATH).convert_alpha() # With transparency
         hint_icon = pygame.transform.scale(hint_icon, (60, 60)) # Resize the hint icon
 
         game.screen.blit(background, (0, 0))
@@ -1041,9 +1024,6 @@ class GameplayState(GameState):
             draw_piece(game.screen, self.selected_piece, (px, py), True, GRID_OFFSET_Y)
 
         # Hint button
-        self.hint_button = pygame.draw.circle(game.screen, ORANGE, (SCREEN_WIDTH - 50, 50), 30)
-        game.screen.blit(hint_icon, self.hint_button.topleft)
-        game.screen.blit(hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
         if self.ai_hint_index is None or self.ai_hint_position is None:
             # If no hint is available, grey out the hint button
             self.hint_button = pygame.draw.circle(game.screen, (128, 128, 128), (SCREEN_WIDTH - 50, 50), 30)
@@ -1061,8 +1041,9 @@ class GameplayState(GameState):
         pygame.display.flip()
 
     def render_ai(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
         background = pygame.image.load(BACKGROUND_GAME_PATH)
+        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+
         game.screen.blit(background, (0, 0))
 
         draw_board(game.screen, self.game_data.board)
@@ -1141,6 +1122,8 @@ class PauseState(GameState):
 
     def enter(self, screen):
         print("Game Paused")
+        self.keyboard_active = False
+        self.selected_option = None
 
     def update(self, game, events):
         for event in events:
@@ -1168,7 +1151,6 @@ class PauseState(GameState):
                     game.state_manager.pop_state()
                     game.state_manager.peek_state().ai_algorithm.stop()
                     game.state_manager.switch_to_base_state(MainMenuState())
-
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
                         self.selected_option = 0
@@ -1187,13 +1169,23 @@ class PauseState(GameState):
                         game.state_manager.peek_state().ai_algorithm.stop()
                         game.state_manager.switch_to_base_state(MainMenuState())
 
-    def render(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        pause_text = font.render('Pause', True, WHITE)
+        # Update selected option based on mouse position
+        # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
+        mouse_pos = pygame.mouse.get_pos()
+        if self.resume_rect.collidepoint(mouse_pos):
+            self.selected_option = 0
+        elif self.exit_rect.collidepoint(mouse_pos):
+            self.selected_option = 1
+        elif not self.keyboard_active:
+            self.selected_option = None
 
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        resume_text = font.render('Resume', True, WHITE)
-        exit_text = font.render('Quit', True, WHITE)
+    def render(self, game):
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+
+        pause_text = title_font.render('Pause', True, WHITE)
+        resume_text = text_font.render('Resume', True, ORANGE if self.selected_option == 0 else WHITE)
+        exit_text = text_font.render('Quit', True, ORANGE if self.selected_option == 1 else WHITE)
 
         # Non-interactable rectangles
         pause_rect = pause_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
@@ -1203,19 +1195,6 @@ class PauseState(GameState):
         self.exit_rect = exit_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 
         game.screen.fill(BROWN)
-
-        mouse_pos = pygame.mouse.get_pos()
-
-        if self.resume_rect.collidepoint(mouse_pos):
-            self.selected_option = 0
-        elif self.exit_rect.collidepoint(mouse_pos):
-            self.selected_option = 1
-        elif not self.keyboard_active:
-            self.selected_option = None
-
-        resume_text = font.render('Resume', True, ORANGE if self.selected_option == 0 else WHITE)
-        exit_text = font.render('Quit', True, ORANGE if self.selected_option == 1 else WHITE)
-
         game.screen.blit(pause_text, pause_rect)
         game.screen.blit(resume_text, self.resume_rect)
         game.screen.blit(exit_text, self.exit_rect)
@@ -1229,12 +1208,12 @@ class GameOverState(GameState):
 
     """
 
-    def __init__(self, player, score, ai_algorithm, level):
+    def __init__(self, score, player, ai_algorithm, level):
         self.keyboard_active = False
         self.selected_option = None
 
-        self.player = player
         self.score = score
+        self.player = player
         self.ai_algorithm = ai_algorithm
         self.level = level
 
@@ -1243,24 +1222,27 @@ class GameOverState(GameState):
 
     def enter(self, screen):
         print("Game Over")
+        self.keyboard_active = False
+        self.selected_option = None
 
     def update(self, game, events):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
                 raise QuitGameException()
+            # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.play_again_rect.collidepoint(event.pos):
                     game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
                 elif self.back_rect.collidepoint(event.pos):
                     # Pop the GameOverState and the GameplayState
                     game.state_manager.pop_state(2)
+            # Keyboard events
             elif event.type == pygame.KEYDOWN:
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state(2)
-
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
                         self.selected_option = 0
@@ -1277,14 +1259,25 @@ class GameOverState(GameState):
                     elif self.selected_option == 1:
                         game.state_manager.pop_state(2)
 
-    def render(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        game_over_text = font.render('Game Over', True, WHITE)
+        # Update selected option based on mouse position
+        # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
+        mouse_pos = pygame.mouse.get_pos()
+        if self.play_again_rect.collidepoint(mouse_pos):
+            self.selected_option = 0
+        elif self.back_rect.collidepoint(mouse_pos):
+            self.selected_option = 1
+        elif not self.keyboard_active:
+            self.selected_option = None
 
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        score_text = font.render(f'Score: {self.score}', True, ORANGE)
-        play_again_text = font.render('Play Again', True, WHITE)
-        back_text = font.render('Go Back', True, WHITE)
+    def render(self, game):
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+
+        game_over_text = title_font.render('Game Over', True, WHITE)
+        score_text = subtitle_font.render(f'Score: {self.score}', True, ORANGE)
+        play_again_text = text_font.render('Play Again', True, ORANGE if self.selected_option == 0 else WHITE)
+        back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
 
         # Non-interactable rectangles
         game_over_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
@@ -1295,18 +1288,6 @@ class GameOverState(GameState):
         self.back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.4))
 
         game.screen.fill(BROWN)
-
-        mouse_pos = pygame.mouse.get_pos()
-        if self.play_again_rect.collidepoint(mouse_pos):
-            self.selected_option = 0
-        elif self.back_rect.collidepoint(mouse_pos):
-            self.selected_option = 1
-        elif not self.keyboard_active:
-            self.selected_option = None
-
-        play_again_text = font.render('Play Again', True, ORANGE if self.selected_option == 0 else WHITE)
-        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
-
         game.screen.blit(game_over_text, game_over_rect)
         game.screen.blit(score_text, score_rect)
         game.screen.blit(play_again_text, self.play_again_rect)
@@ -1326,7 +1307,6 @@ class LevelCompleteState(GameState):
         self.selected_option = None
 
         self.score = score
-
         self.player = player
         self.ai_algorithm = ai_algorithm
         self.level = level
@@ -1337,6 +1317,8 @@ class LevelCompleteState(GameState):
 
     def enter(self, screen):
         print("Level Complete")
+        self.keyboard_active = False
+        self.selected_option = None
 
     def update(self, game, events):
         for event in events:
@@ -1359,36 +1341,51 @@ class LevelCompleteState(GameState):
 
                 if event.key == pygame.K_BACKSPACE:
                     game.state_manager.pop_state()
-
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option - 1) % 3
+                        self.selected_option = (self.selected_option - 1) % (3 if self.level != LEVELS[-1] else 2)
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option + 1) % 3
+                        self.selected_option = (self.selected_option + 1) % (3 if self.level != LEVELS[-1] else 2)
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0 and self.level != LEVELS[-1]:
                         game.state_manager.pop_state(2)
                         game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level + 1))
-                    elif self.selected_option == 1:
+                    elif self.selected_option == 1 or (self.selected_option == 0 and self.level == LEVELS[-1]):
                         game.state_manager.pop_state(2)
                         game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, self.level))
-                    elif self.selected_option == 2:
+                    elif self.selected_option == 2 or (self.selected_option == 1 and self.level == LEVELS[-1]):
                         game.state_manager.pop_state(2)
 
-    def render(self, game):
-        font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
-        level_complete_text = font.render('Level Complete', True, WHITE)
+        # Update selected option based on mouse position
+        # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
+        mouse_pos = pygame.mouse.get_pos()
+        if self.next_level_rect.collidepoint(mouse_pos) and self.level != LEVELS[-1]:
+            self.selected_option = 0
+        elif self.play_next_rect.collidepoint(mouse_pos):
+            self.selected_option = 1
+        elif self.back_rect.collidepoint(mouse_pos):
+            self.selected_option = 2
+        elif not self.keyboard_active:
+            self.selected_option = None
 
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
-        score_text = font.render(f'Score: {self.score}', True, ORANGE)
-        next_level_text = font.render('Next Level', True, WHITE)
-        play_next_text = font.render('Retry Level', True, WHITE)
-        back_text = font.render('Go Back', True, WHITE)
+    def render(self, game):
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+
+        level_complete_text = title_font.render('Level Complete', True, WHITE)
+        score_text = text_font.render(f'Score: {self.score}', True, ORANGE)
+        if self.level != LEVELS[-1]:
+            next_level_text = font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
+            play_next_text = font.render('Retry Level', True, ORANGE if self.selected_option == 1 else WHITE)
+            back_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
+        else:
+            play_next_text = font.render('Retry Level', True, ORANGE if self.selected_option == 0 else WHITE)
+            back_text = font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
 
         # Non-interactable rectangles
         level_complete_rect = level_complete_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
@@ -1400,22 +1397,6 @@ class LevelCompleteState(GameState):
         self.back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.3))
 
         game.screen.fill(BROWN)
-
-        mouse_pos = pygame.mouse.get_pos()
-        if self.next_level_rect.collidepoint(mouse_pos) and self.level != LEVELS[-1]:
-            self.selected_option = 0
-        elif self.play_next_rect.collidepoint(mouse_pos):
-            self.selected_option = 1
-        elif self.back_rect.collidepoint(mouse_pos):
-            self.selected_option = 2
-        elif not self.keyboard_active:
-            self.selected_option = None
-
-        if self.level != LEVELS[-1]:
-            next_level_text = font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
-        play_next_text = font.render('Play Next', True, ORANGE if self.selected_option == 1 else WHITE)
-        back_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
-
         game.screen.blit(level_complete_text, level_complete_rect)
         game.screen.blit(score_text, score_rect)
         if self.level != LEVELS[-1]:
@@ -1423,7 +1404,6 @@ class LevelCompleteState(GameState):
         game.screen.blit(play_next_text, self.play_next_rect)
         game.screen.blit(back_text, self.back_rect)
         pygame.display.flip()
-
 
     def exit(self, screen):
         print("Exiting Level Complete")
