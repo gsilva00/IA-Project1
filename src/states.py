@@ -1380,19 +1380,20 @@ class LevelCompleteState(GameState):
         level_complete_text = title_font.render('Level Complete', True, WHITE)
         score_text = text_font.render(f'Score: {self.score}', True, ORANGE)
         if self.level != LEVELS[-1]:
-            next_level_text = font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
-            play_next_text = font.render('Retry Level', True, ORANGE if self.selected_option == 1 else WHITE)
-            back_text = font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
+            next_level_text = text_font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
+            play_next_text = text_font.render('Retry Level', True, ORANGE if self.selected_option == 1 else WHITE)
+            back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
         else:
-            play_next_text = font.render('Retry Level', True, ORANGE if self.selected_option == 0 else WHITE)
-            back_text = font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
+            play_next_text = text_font.render('Retry Level', True, ORANGE if self.selected_option == 0 else WHITE)
+            back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
 
         # Non-interactable rectangles
         level_complete_rect = level_complete_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 4))
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2.5))
 
         # Interactable rectangles
-        self.next_level_rect = next_level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.7))
+        if self.level != LEVELS[-1]:
+            self.next_level_rect = next_level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.7))
         self.play_next_rect = play_next_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.5))
         self.back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.3))
 
