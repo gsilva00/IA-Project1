@@ -191,7 +191,7 @@ class MainMenuState(GameState):
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
                 raise QuitGameException()
-            elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN or (event.type == pygame.KEYDOWN and event.key != pygame.K_ESCAPE):
                 game.state_manager.push_state(SelectPlayerState())
 
     def render(self, game):
@@ -241,7 +241,7 @@ class SelectPlayerState(GameState):
 
     def update(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -256,7 +256,7 @@ class SelectPlayerState(GameState):
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == pygame.K_ESCAPE:
                     game.state_manager.pop_state()
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
@@ -352,7 +352,7 @@ class SelectAIAlgorithmState(GameState):
 
     def update(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -375,7 +375,7 @@ class SelectAIAlgorithmState(GameState):
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == pygame.K_ESCAPE:
                     game.state_manager.pop_state()
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
@@ -498,7 +498,7 @@ class SelectModeState(GameState):
 
     def update(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -513,7 +513,7 @@ class SelectModeState(GameState):
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == pygame.K_ESCAPE:
                     game.state_manager.pop_state()
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
@@ -606,7 +606,7 @@ class SelectLevelState(GameState):
 
     def update(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -623,7 +623,7 @@ class SelectLevelState(GameState):
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == pygame.K_ESCAPE:
                     game.state_manager.pop_state()
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
@@ -1145,7 +1145,7 @@ class PauseState(GameState):
 
                 if event.key in [pygame.K_r, pygame.K_ESCAPE, pygame.K_p]:
                     game.state_manager.pop_state()
-                elif event.key == pygame.K_BACKSPACE:
+                elif event.key == pygame.K_ESCAPE:
                     game.state_manager.pop_state()
                     game.state_manager.peek_state().ai_algorithm.stop()
                     game.state_manager.switch_to_base_state(MainMenuState())
@@ -1224,7 +1224,7 @@ class GameOverState(GameState):
 
     def update(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -1238,7 +1238,7 @@ class GameOverState(GameState):
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == pygame.K_ESCAPE:
                     game.state_manager.pop_state(2)
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
@@ -1318,7 +1318,7 @@ class LevelCompleteState(GameState):
 
     def update(self, game, events):
         for event in events:
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or event.key == pygame.K_q)):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -1333,7 +1333,7 @@ class LevelCompleteState(GameState):
                 if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
                     self.keyboard_active = True
 
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == pygame.K_ESCAPE:
                     game.state_manager.pop_state()
                 elif event.key in [pygame.K_UP, pygame.K_w]:
                     if self.selected_option is None:
