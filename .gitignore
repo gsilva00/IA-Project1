@@ -6,7 +6,9 @@
 data/
 
 # Ignore custom GameData JSON-representation files
-custom/
+# - Keep the example file for reference
+custom/*
+!custom/example.json
 
 # Ignore Python cache
 __pycache__/
