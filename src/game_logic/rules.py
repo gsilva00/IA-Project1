@@ -19,6 +19,7 @@ def place_piece(game_data, piece, position, hint=False):
         game_data (GameData): The game data.
         piece (List[Tuple[int, int]]): The piece to place.
         position (Tuple[int, int]): The position to place the piece.
+        hint (bool): If True, place the piece as a hint (not permanent and different value to indicate hint and differentiate color).
     """
 
     game_data.recent_piece = (piece, position)
@@ -115,7 +116,7 @@ def no_more_valid_moves(board, pieces):
     """Checks if there are no more valid moves for the player.
 
     Args:
-        board (List[List[int]): The game board.
+        board (List[List[int]]): The game board.
         pieces (List[List[Tuple[int, int]]]): The list of possible pieces to place.
 
     Returns:

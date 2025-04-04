@@ -31,6 +31,7 @@ _ASSETS_PATH = os.path.join(_BASE_PATH, 'assets')
 _FONTS_PATH = os.path.join(_ASSETS_PATH, 'fonts')
 _IMAGES_PATH = os.path.join(_ASSETS_PATH, 'images')
 
+CUSTOM_PATH = os.path.join(_BASE_PATH, 'custom')
 DATA_PATH = os.path.join(_BASE_PATH, 'data')
 
 # Font
@@ -93,11 +94,21 @@ GREEDY = 3
 A_STAR = 4
 WEIGHTED_A_STAR = 5
 
+AI_ALGO_NAMES = {
+    BFS: "Breadth First Search",
+    DFS: "Depth First Search",
+    ITER_DEEP: "Iterative Deepening",
+    GREEDY: "Greedy Search",
+    A_STAR: "A* Search",
+    WEIGHTED_A_STAR: "Weighted A* Search"
+}
+
 # For levels
 INFINITE = 0
 LEVEL_1 = 1
 LEVEL_2 = 2
 LEVEL_3 = 3
+CUSTOM = 101
 
 LEVELS = [LEVEL_1, LEVEL_2, LEVEL_3]
 

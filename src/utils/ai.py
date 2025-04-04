@@ -1,7 +1,7 @@
 import copy
 
 from game_logic.constants import GRID_SIZE
-from game_logic.rules import clear_full_lines, is_valid_position, no_more_valid_moves, place_piece
+from game_logic.rules import clear_full_lines, is_valid_position, place_piece
 
 
 _num_states = 0

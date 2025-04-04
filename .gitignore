@@ -5,5 +5,8 @@
 # Ignore data files (until they are ready)
 data/
 
+# Ignore custom GameData JSON-representation files
+custom/
+
 # Ignore Python cache
 __pycache__/

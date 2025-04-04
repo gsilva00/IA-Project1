@@ -5,11 +5,10 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
 from AI.algorithm_registry import AIAlgorithmRegistry
-from AI.heuristics import greedy_heuristic, a_star_heuristic
+from AI.heuristics import a_star_heuristic, greedy_heuristic
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
-                                  GREEDY, INFINITE, ITER_DEEP,
-                                  WEIGHTED_A_STAR)
-from utils.ai import child_states, goal_state, get_num_states
+                                  GREEDY, INFINITE, ITER_DEEP, WEIGHTED_A_STAR)
+from utils.ai import child_states, get_num_states, goal_state
 from utils.file import stats_to_file
 
 
@@ -54,7 +53,7 @@ class TreeNode:
         Returns:
             bool: True if this node is less than the other node, False otherwise.
         """
-        return self.heuristic_score > other.heuristic_score
+        return self.heuristic_score < other.heuristic_score
 
 class AIAlgorithm:
     def __init__(self, level):
@@ -91,7 +90,8 @@ class AIAlgorithm:
 
         Args:
             game_data (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
-            callback (function, optional): The function to call when the algorithm has finished running. Defaults to None.
+            time_callback_func (function, optional): The function to call when the algorithm starts and when it ends. Defaults to None.
+            res_callback_func (function, optional): The function to call when the algorithm is done. Defaults to None.
             reset (bool, optional): Whether to reset the stored algorithm results. Defaults to False.
 
         """
@@ -191,7 +191,8 @@ class AIAlgorithm:
             print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
             print(f"[{type(self).__name__}] Memory: {peak_mem / (1024 * 1024):.4f} MB")
             print(f"[{type(self).__name__}] States: {num_states}")
-            stats_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, peak_mem, num_states)
+            print(f"[{type(self).__name__}] Number of moves: {len(result)}")
+            stats_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, peak_mem, num_states, len(result))
         else:
             print(f"[{type(self).__name__}] Algorithm did not complete.")
 
@@ -396,7 +397,7 @@ class AStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic(node, node.state, child_state) - (node.path_cost + 1)
+                        a_star_heuristic(node, node.state, child_state) + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
@@ -430,7 +431,7 @@ class WeightedAStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic(node, node.state, child_state) * weight - (node.path_cost + 1)
+                        a_star_heuristic(node, node.state, child_state) * weight + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
