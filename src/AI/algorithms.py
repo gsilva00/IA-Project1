@@ -90,7 +90,8 @@ class AIAlgorithm:
 
         Args:
             game_data (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
-            callback (function, optional): The function to call when the algorithm has finished running. Defaults to None.
+            time_callback_func (function, optional): The function to call when the algorithm starts and when it ends. Defaults to None.
+            res_callback_func (function, optional): The function to call when the algorithm is done. Defaults to None.
             reset (bool, optional): Whether to reset the stored algorithm results. Defaults to False.
 
         """
