@@ -2,18 +2,22 @@ import copy
 import json
 
 from game_logic.constants import (GRID_SIZE, INFINITE, LEVEL_BLOCKS,
-                                  LEVEL_BOARDS)
+                                  LEVEL_BOARDS, CUSTOM)
 from game_logic.rules import generate_pieces
 
 
 class GameData:
-    def __init__(self, level=INFINITE):
-        self.board = copy.deepcopy(LEVEL_BOARDS[level]) if level != INFINITE else [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
+    def __init__(self, level=INFINITE, file_path=None):
+        self.board = copy.deepcopy(LEVEL_BOARDS[level if level != CUSTOM else 1]) if level != INFINITE else [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
         self.following_pieces = generate_pieces()
         self.pieces = []
         _areThereMore = self.get_more_playable_pieces()
-        self.blocks_to_break = copy.deepcopy(LEVEL_BLOCKS[level]) if level != INFINITE else 0
+        self.blocks_to_break = copy.deepcopy(LEVEL_BLOCKS[level if level != CUSTOM else 1]) if level != INFINITE else 0
         self.recent_piece = None
+
+        if level == CUSTOM and file_path is not None:
+            self.load_game_state(file_path)
+
 
     def get_more_playable_pieces(self):
         """Get more pieces to play from the already generated pieces.
@@ -83,6 +87,7 @@ class GameData:
             file_path (str): The path to the file where the game state will be saved.
 
         """
+
         game_state = {
             'board': self.board,
             'following_pieces': self.following_pieces,
@@ -93,31 +98,25 @@ class GameData:
             json.dump(game_state, file)
 
     def load_game_state(self, file_path):
-        """Load the game state from a file."""
+        """Load the game state from a file.
+
+        """
+
         with open(file_path, 'r') as file:
             game_state = json.load(file)
-        self.board = game_state['board']
-        self.following_pieces = game_state['following_pieces']
-        self.pieces = game_state['pieces']
-        self.blocks_to_break = game_state['blocks_to_break']
 
-if __name__ == '__main__':
-    visited = set()
-    game_data = GameData()
-    game_data.board = [[0, 0, 0, 0], [0, 2, 2, 0], [0, 2, 2, 0], [0, 0, 0, 0]]
-    game_data.pieces = [[(0, 0), (1, 0), (2, 0)], [(0, 0), (1, 0), (2, 0)], None]
-    game_data.following_pieces = [[[(0, 0), (0, 1)], [(0, 0), (1, 0)], [(0, 0), (1, 0)]], [None, None, None]]
-    game_data.blocks_to_break = 4
-    game_data.recent_piece = ([(0, 0), (1, 0), (2, 0)], (1, 1))
-
-    game_data_copy = GameData()
-    game_data_copy.board = [[0, 0, 0, 0], [0, 2, 2, 0], [0, 2, 2, 0], [0, 0, 0, 0]]
-    game_data_copy.pieces = [[(0, 0), (1, 0), (2, 0)], None, [(0, 0), (1, 0), (2, 0)]]
-    game_data_copy.following_pieces = [[[(0, 0), (0, 1)], [(0, 0), (1, 0)], [(0, 0), (1, 0)]], [None, None, None]]
-    game_data_copy.blocks_to_break = 4
-    game_data_copy.recent_piece = ([(0, 0), (1, 0), (2, 0)], (1, 1))
-
-    visited.add(game_data)
-    visited.add(game_data_copy)
-
-    print(game_data == game_data_copy)  # True
+        # Use get() to avoid KeyError if the key is not present, using the default (already initialized) game_data values
+        # Special case for following_pieces and pieces, due to the JSON format not preserving the tuple structure of each square in the piece
+        self.board = game_state.get('board', self.board)
+        self.following_pieces = [
+            [
+                [tuple(square) for square in piece] if piece is not None else None
+                for piece in three_piece_group
+            ]
+            for three_piece_group in game_state.get('following_pieces', self.following_pieces)
+        ]
+        self.pieces = [
+            [tuple(square) for square in piece] if piece is not None else None
+            for piece in game_state.get('pieces', self.pieces)
+        ]
+        self.blocks_to_break = game_state.get('blocks_to_break', self.blocks_to_break)

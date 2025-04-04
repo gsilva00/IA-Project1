@@ -1,5 +1,6 @@
 import copy
 import math
+import os
 import time
 
 import pygame
@@ -11,7 +12,7 @@ from AI.algorithms import (AIAlgorithm, AStarAlgorithm, BFSAlgorithm,
 from game_data import GameData
 from game_logic.constants import (A_STAR, AI, AI_ALGO_NAMES, AI_FOUND, AI_NOT_FOUND,
                                   BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH,
-                                  BFS, BROWN, CELL_SIZE, DFS, FONT_HINT_SIZE,
+                                  BFS, BROWN, CELL_SIZE, CUSTOM, DFS, FONT_HINT_SIZE,
                                   FONT_PATH, FONT_TEXT_SIZE,
                                   FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE,
                                   GAME_ICON_MENU_PATH, GRAY, GREEDY,
@@ -21,9 +22,10 @@ from game_logic.constants import (A_STAR, AI, AI_ALGO_NAMES, AI_FOUND, AI_NOT_FO
                                   PIECES_LIST_BETWEEN_OFFSET_X_CELLS,
                                   PIECES_LIST_OFFSET_X_CELLS,
                                   PIECES_LIST_OFFSET_Y_CELLS, SCREEN_HEIGHT,
-                                  SCREEN_WIDTH, WEIGHTED_A_STAR, WHITE)
+                                  SCREEN_WIDTH, WEIGHTED_A_STAR, WHITE, CUSTOM_PATH)
 from game_logic.rules import (clear_full_lines, is_valid_position,
                               no_more_valid_moves, place_piece)
+from utils.file import get_recent_files
 from utils.misc import QuitGameException, ScreenWrapper
 from utils.ui import draw_board, draw_piece, draw_score
 
@@ -581,7 +583,7 @@ class SelectModeState(GameState):
         pygame.display.flip()
 
     def exit(self, screen):
-        print("Exiting Main Menu")
+        print("Exiting Select Mode Menu")
 
 class SelectLevelState(GameState):
     """Menu to select the game level for the Levels mode
@@ -597,6 +599,7 @@ class SelectLevelState(GameState):
         self.level_1_rect = None
         self.level_2_rect = None
         self.level_3_rect = None
+        self.custom_rect = None
         self.back_rect = None
 
     def enter(self, screen):
@@ -616,6 +619,8 @@ class SelectLevelState(GameState):
                     game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_2))
                 elif self.level_3_rect.collidepoint(event.pos):
                     game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_3))
+                elif self.custom_rect.collidepoint(event.pos):
+                    game.state_manager.push_state(SelectCustomState(self.player, self.ai_algorithm))
                 elif self.back_rect.collidepoint(event.pos):
                     game.state_manager.pop_state()
             # Keyboard events
@@ -629,12 +634,12 @@ class SelectLevelState(GameState):
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option - 1) % 4
+                        self.selected_option = (self.selected_option - 1) % 5
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option + 1) % 4
+                        self.selected_option = (self.selected_option + 1) % 5
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
                         game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_1))
@@ -643,6 +648,8 @@ class SelectLevelState(GameState):
                     elif self.selected_option == 2:
                         game.state_manager.push_state(GameplayState(self.player, self.ai_algorithm, LEVEL_3))
                     elif self.selected_option == 3:
+                        game.state_manager.push_state(SelectCustomState(self.player, self.ai_algorithm))
+                    elif self.selected_option == 4:
                         game.state_manager.pop_state()
 
         # Update selected option based on mouse position
@@ -654,8 +661,10 @@ class SelectLevelState(GameState):
             self.selected_option = 1
         elif self.level_3_rect.collidepoint(mouse_pos):
             self.selected_option = 2
-        elif self.back_rect.collidepoint(mouse_pos):
+        elif self.custom_rect.collidepoint(mouse_pos):
             self.selected_option = 3
+        elif self.back_rect.collidepoint(mouse_pos):
+            self.selected_option = 4
         elif not self.keyboard_active:
             self.selected_option = None
 
@@ -672,18 +681,20 @@ class SelectLevelState(GameState):
         level_1_text = text_font.render('Level 1', True, ORANGE if self.selected_option == 0 else WHITE)
         level_2_text = text_font.render('Level 2', True, ORANGE if self.selected_option == 1 else WHITE)
         level_3_text = text_font.render('Level 3', True, ORANGE if self.selected_option == 2 else WHITE)
-        back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 3 else WHITE)
+        custom_text = text_font.render('Custom', True, ORANGE if self.selected_option == 3 else WHITE)
+        back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 4 else WHITE)
 
         # Non-interactable rectangles
         title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
         title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
         title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
+        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65))
 
         # Interactable rectangles
-        self.level_1_rect = level_1_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
-        self.level_2_rect = level_2_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
-        self.level_3_rect = level_3_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.42))
+        self.level_1_rect = level_1_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.05))
+        self.level_2_rect = level_2_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.8))
+        self.level_3_rect = level_3_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.6))
+        self.custom_rect = custom_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.4))
         self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.2))
 
         game.screen.blit(background, (0, 0))
@@ -694,6 +705,7 @@ class SelectLevelState(GameState):
         game.screen.blit(level_1_text, self.level_1_rect)
         game.screen.blit(level_2_text, self.level_2_rect)
         game.screen.blit(level_3_text, self.level_3_rect)
+        game.screen.blit(custom_text, self.custom_rect)
         game.screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
@@ -701,12 +713,125 @@ class SelectLevelState(GameState):
         print("Exiting Select Level")
 
 
+class SelectCustomState(GameState):
+    """Menu to select a custom game state from the most recent files in the custom folder
+
+    """
+
+    def __init__(self, player, algorithm):
+        self.player = player
+        self.algorithm = algorithm
+
+        self.keyboard_active = False
+        self.selected_option = None
+        self.file_rects = []
+        self.back_rect = None
+        self.custom_files = []
+
+    def enter(self, screen):
+        print("Entering Select Custom Menu")
+        self.keyboard_active = False
+        self.selected_option = None
+        self.custom_files = get_recent_files(CUSTOM_PATH, 4)
+
+    def update(self, game, events):
+        for event in events:
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
+                raise QuitGameException()
+            # Mouse click events
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                for i, rect in enumerate(self.file_rects):
+                    if rect.collidepoint(event.pos):
+                        game.state_manager.push_state(GameplayState(self.player, self.algorithm, CUSTOM, os.path.join(CUSTOM_PATH, self.custom_files[i])))
+                if self.back_rect.collidepoint(event.pos):
+                    game.state_manager.pop_state()
+            # Keyboard events
+            elif event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
+                    self.keyboard_active = True
+
+                if event.key == pygame.K_ESCAPE:
+                    game.state_manager.pop_state()
+                elif event.key in [pygame.K_UP, pygame.K_w]:
+                    if self.selected_option is None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option - 1) % (len(self.custom_files) + 1)
+                elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                    if self.selected_option is None:
+                        self.selected_option = 0
+                    else:
+                        self.selected_option = (self.selected_option + 1) % (len(self.custom_files) + 1)
+                elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                    if self.selected_option < len(self.custom_files):
+                        game.state_manager.push_state(GameplayState(self.player, self.algorithm, CUSTOM, os.path.join(CUSTOM_PATH, self.custom_files[self.selected_option])))
+                    else:
+                        game.state_manager.pop_state()
+
+        # Update selected option based on mouse position
+        # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
+        mouse_pos = pygame.mouse.get_pos()
+        for i, rect in enumerate(self.file_rects):
+            if rect.collidepoint(mouse_pos):
+                self.selected_option = i
+        if self.back_rect.collidepoint(mouse_pos):
+            self.selected_option = len(self.custom_files)
+        elif not self.keyboard_active:
+            self.selected_option = None
+
+    def render(self, game):
+        background = pygame.image.load(BACKGROUND_MENU_PATH)
+        title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
+        subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
+
+        title_text_back = title_font.render('Wood Block', True, BROWN)
+        title_text_middle = title_font.render('Wood Block', True, ORANGE)
+        title_text_front = title_font.render('Wood Block', True, WHITE)
+        subtitle_text = subtitle_font.render('Select Custom (JSON) File', True, BROWN)
+        back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == len(self.custom_files) else WHITE)
+
+        # Non-interactable rectangles
+        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.65))
+
+        # Interactable rectangles
+        # - File rects are included (in the loop below)
+        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.2))
+
+        game.screen.blit(background, (0, 0))
+        game.screen.blit(title_text_back, title_rect_back)
+        game.screen.blit(title_text_middle, title_rect_middle)
+        game.screen.blit(title_text_front, title_rect_front)
+        game.screen.blit(subtitle_text, subtitle_rect)
+
+        self.file_rects = []
+        if self.custom_files:
+            for i, file in enumerate(self.custom_files):
+                file_text = text_font.render(file[:30] + '...' if len(file) > 30 else file, True, ORANGE if self.selected_option == i else WHITE)
+                file_rect = file_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1 + i * 50))
+                self.file_rects.append(file_rect)
+                game.screen.blit(file_text, file_rect)
+        else:
+            no_files_text = text_font.render('No custom files found', True, WHITE)
+            no_files_rect = no_files_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
+            game.screen.blit(no_files_text, no_files_rect)
+
+        game.screen.blit(back_text, self.back_rect)
+        pygame.display.flip()
+
+    def exit(self, screen):
+        print("Exiting Select Custom Menu")
+
+
 class GameplayState(GameState):
     """Gameplay state of the game
 
     """
 
-    def __init__(self, player, ai_algorithm, level=INFINITE):
+    def __init__(self, player, ai_algorithm, level=INFINITE, file_path=None):
         self.player = player
         self.ai_algorithm_id = ai_algorithm
         self.ai_algorithm = get_ai_algorithm(self.ai_algorithm_id, level)
@@ -728,7 +853,7 @@ class GameplayState(GameState):
         # custom_game_data.following_pieces = []
         # custom_game_data.blocks_to_break = 1
         # self.game_data = custom_game_data
-        self.game_data = GameData(self.level)
+        self.game_data = GameData(self.level, file_path)
         self.score = 0
         self.selected_index = None
         self.selected_piece = None
