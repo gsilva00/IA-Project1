@@ -1,7 +1,6 @@
 import copy
 
-from game_logic.rules import (clear_full_lines, no_more_valid_moves, place_piece)
-
+from game_logic.rules import (clear_full_lines, no_more_valid_moves, place_piece, is_valid_position)
 
 def greedy_heuristic(node, parent, current):
     score = 0
@@ -15,13 +14,14 @@ def greedy_heuristic(node, parent, current):
     _, target_blocks_cleared = clear_full_lines(temp_state.board)
     score += target_blocks_cleared * 20  # Increased weight for clearing lines
 
-    # 1º) Iterate through the rows and columns containing the placed piece
+    # 2º) Reward proximity to clearing target blocks
     for x, y in piece:
         row = py + y
         col = px + x
         score += sum(3 for cell in parent.board[row] if cell == 2)  # Row
         score += sum(3 for row in parent.board if row[col] == 2)  # Column
 
+    # 3º) Reward normal block placement near others for future clears
     for x, y in piece:
         row = py + y
         col = px + x
@@ -42,13 +42,10 @@ def greedy_heuristic(node, parent, current):
         if no_more_valid_moves(current.board, current.pieces):
             return float('-inf')  # Deadlock
     
-    # 6º) Inherit the score from the parent node
-    if (score + node.heuristic_score) <= 0:
-        score = 0
-    else:
-        score += node.heuristic_score
+    # 6º) Soft inheritance from the parent node
+    score += max(0, (500 - node.heuristic_score * 25))
 
-    return score
+    return (1000 - score) / 50 # Normalize the score
 
 def a_star_heuristic(node, parent, current):
     score = 0
@@ -59,8 +56,9 @@ def a_star_heuristic(node, parent, current):
     place_piece(temp_state, piece, (px, py))
 
     # 1º) Reward clearing rows and columns
-    _, target_blocks_cleared = clear_full_lines(temp_state.board)
-    score += target_blocks_cleared * 20  # Increased weight for clearing lines
+    lines_cleared, target_blocks_cleared = clear_full_lines(temp_state.board)
+    clear_bonus = (2 ** (lines_cleared - 1)) * 10  # Exponential bonus for multi-clears
+    score += target_blocks_cleared * 20 + clear_bonus
 
     # 2º) Reward proximity to clearing target blocks
     for x, y in piece:
@@ -69,18 +67,17 @@ def a_star_heuristic(node, parent, current):
         score += sum(3 for cell in parent.board[row] if cell == 2)  # Row proximity
         score += sum(3 for row in parent.board if row[col] == 2)  # Column proximity
 
-    # 3º) Reward being near other normal blocks to facilitate future clears
-    for x, y in piece:
-        row = py + y
-        col = px + x
-        score += sum(1 for cell in parent.board[row] if cell == 1)  # Row
-        score += sum(1 for row in parent.board if row[col] == 1)  # Column
 
-    # 4º) Focus on reducing target blocks left
-    h_remaining_targets = count_target_clusters(current.board) * 15  # Estimate cost based on targets left
-    score -= h_remaining_targets  # Higher cost for more remaining targets
 
-    # 5º) Penalize deadlocks
+    # 4º) Focus on reducing target clusters to speed up game completion
+    h_remaining_targets = count_target_clusters(current.board) * 15
+    score -= h_remaining_targets  # Higher cost for more clusters
+
+    # 5º) Reward mobility (number of valid placements left)
+    mobility_score = count_valid_moves(current.board, current.pieces) * 5
+    score += mobility_score
+
+    # 6º) Penalize moves that lead to deadlocks
     if not any(current.pieces):
         if not any(current.following_pieces):
             return float('-inf')  # No possible moves left
@@ -90,10 +87,10 @@ def a_star_heuristic(node, parent, current):
         if no_more_valid_moves(current.board, current.pieces):
             return float('-inf')  # Deadlock
 
-    # 6º) Combine with parent's heuristic score
-    score += node.heuristic_score
+    # 7º) Soft inheritance from the parent node
+    score += max(0, (500 - node.heuristic_score * 25))
 
-    return score
+    return (1000 - score) / 50 # Normalize the score
 
 def count_target_clusters(board):
     """Count distinct clusters of target blocks (2s)."""
@@ -115,3 +112,15 @@ def count_target_clusters(board):
                 dfs(x, y)
     
     return clusters
+
+def count_valid_moves(board, pieces):
+    """Count total valid placements for all pieces."""
+    count = 0
+    for piece in pieces:
+        if piece is None:
+            continue
+        for y in range(len(board)):
+            for x in range(len(board[0])):
+                if is_valid_position(board, piece, (x, y)):  # Assume function exists
+                    count += 1
+    return count

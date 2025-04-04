@@ -53,7 +53,7 @@ class TreeNode:
         Returns:
             bool: True if this node is less than the other node, False otherwise.
         """
-        return self.heuristic_score > other.heuristic_score
+        return self.heuristic_score < other.heuristic_score
 
 class AIAlgorithm:
     def __init__(self, level):
@@ -397,7 +397,7 @@ class AStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic(node, node.state, child_state) - (node.path_cost + 1)
+                        a_star_heuristic(node, node.state, child_state) + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
@@ -431,7 +431,7 @@ class WeightedAStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic(node, node.state, child_state) * weight - (node.path_cost + 1)
+                        a_star_heuristic(node, node.state, child_state) * weight + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
