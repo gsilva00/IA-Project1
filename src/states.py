@@ -1403,7 +1403,7 @@ class GameOverState(GameState):
 
         game_over_text = title_font.render('Game Over', True, WHITE)
         score_text = subtitle_font.render(f'Score: {self.score}', True, ORANGE)
-        play_again_text = text_font.render('Play Again', True, ORANGE if self.selected_option == 0 else WHITE)
+        play_again_text = text_font.render('Retry Level', True, ORANGE if self.selected_option == 0 else WHITE)
         back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
 
         # Non-interactable rectangles
@@ -1503,10 +1503,10 @@ class LevelCompleteState(GameState):
         score_text = text_font.render(f'Score: {self.score}', True, ORANGE)
         if self.level != LEVELS[-1]:
             next_level_text = text_font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
-            play_next_text = text_font.render('Retry Level', True, ORANGE if self.selected_option == 1 else WHITE)
+            play_next_text = text_font.render('Play Again', True, ORANGE if self.selected_option == 1 else WHITE)
             back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
         else:
-            play_next_text = text_font.render('Retry Level', True, ORANGE if self.selected_option == 0 else WHITE)
+            play_next_text = text_font.render('Play Again', True, ORANGE if self.selected_option == 0 else WHITE)
             back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
 
         # Non-interactable rectangles
