@@ -9,7 +9,7 @@ from AI.algorithms import (AIAlgorithm, AStarAlgorithm, BFSAlgorithm,
                            DFSAlgorithm, GreedySearchAlgorithm,
                            IterDeepAlgorithm, WeightedAStarAlgorithm)
 from game_data import GameData
-from game_logic.constants import (A_STAR, AI, AI_FOUND, AI_NOT_FOUND,
+from game_logic.constants import (A_STAR, AI, AI_ALGO_NAMES, AI_FOUND, AI_NOT_FOUND,
                                   BACKGROUND_GAME_PATH, BACKGROUND_MENU_PATH,
                                   BFS, BROWN, CELL_SIZE, DFS, FONT_HINT_SIZE,
                                   FONT_PATH, FONT_TEXT_SIZE,
@@ -777,7 +777,7 @@ class GameplayState(GameState):
 
                 for i, piece in enumerate(self.game_data.pieces):
                     if piece == self.selected_piece:
-                        # Convert from cell-based coordinates to screen-based coordinates
+                        # Convert from board (cell-based) coordinates to screen-based coordinates
                         self.ai_initial_pos = ((i * PIECES_LIST_BETWEEN_OFFSET_X_CELLS + PIECES_LIST_OFFSET_X_CELLS) * CELL_SIZE, PIECES_LIST_OFFSET_Y_CELLS * CELL_SIZE)
                         self.ai_current_pos = self.ai_initial_pos
                         break
@@ -1041,7 +1041,7 @@ class GameplayState(GameState):
 
     def render_ai(self, game):
         background = pygame.image.load(BACKGROUND_GAME_PATH)
-        font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
+        text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
 
         game.screen.blit(background, (0, 0))
 
@@ -1080,14 +1080,18 @@ class GameplayState(GameState):
 
         # The AI is running, show the time elapsed
         if self.ai_running_start_time is not None:
+            algorithm_text = text_font.render(f"{AI_ALGO_NAMES.get(get_ai_algorithm_id(self.ai_algorithm))} is running...", True, WHITE)
             elapsed_time = time.time() - self.ai_running_start_time
-            elapsed_time_text = font.render(f'Time Elapsed: {elapsed_time:.3f} seconds', True, WHITE)
+            elapsed_time_text = text_font.render(f'Time Elapsed: {elapsed_time:.3f} seconds', True, WHITE)
+
+            algorithm_time_rect = algorithm_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2.8))
             elapsed_time_rect = elapsed_time_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 
             overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             overlay.set_alpha(128)  # Set transparency level (0-255)
             overlay.fill((128, 128, 128))  # Grey color
             game.screen.blit(overlay, (0, 0))
+            game.screen.blit(algorithm_text, algorithm_time_rect)
             game.screen.blit(elapsed_time_text, elapsed_time_rect)
 
         draw_score(game.screen, self.score)

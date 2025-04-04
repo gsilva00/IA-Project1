@@ -93,6 +93,15 @@ GREEDY = 3
 A_STAR = 4
 WEIGHTED_A_STAR = 5
 
+AI_ALGO_NAMES = {
+    BFS: "Breadth First Search",
+    DFS: "Depth First Search",
+    ITER_DEEP: "Iterative Deepening",
+    GREEDY: "Greedy Search",
+    A_STAR: "A* Search",
+    WEIGHTED_A_STAR: "Weighted A* Search"
+}
+
 # For levels
 INFINITE = 0
 LEVEL_1 = 1
