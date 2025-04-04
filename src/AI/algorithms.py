@@ -190,7 +190,8 @@ class AIAlgorithm:
             print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
             print(f"[{type(self).__name__}] Memory: {peak_mem / (1024 * 1024):.4f} MB")
             print(f"[{type(self).__name__}] States: {num_states}")
-            stats_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, peak_mem, num_states)
+            print(f"[{type(self).__name__}] Number of moves: {len(result)}")
+            stats_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, peak_mem, num_states, len(result))
         else:
             print(f"[{type(self).__name__}] Algorithm did not complete.")
 
