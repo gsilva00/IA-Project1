@@ -855,9 +855,9 @@ class GameplayState(GameState):
         # self.game_data = custom_game_data
         self.game_data = GameData(self.level, file_path)
         self.score = 0
+
         self.selected_index = None
         self.selected_piece = None
-
         self.hint_button = None
         self.hint_pressed = False
         self.ai_hint_index = None
@@ -868,10 +868,9 @@ class GameplayState(GameState):
         self.ai_current_pos = None
         self.ai_target_pos = None
 
-        self.done = None
 
     def _toggle_ai_running_time(self):
-        """Toggle the AI running time to stop or start the timer
+        """Toggle the AI running time to start or stop the timer
 
         """
 
@@ -913,6 +912,29 @@ class GameplayState(GameState):
         elif status == AI_NOT_FOUND:
             print("AI didn't find a move")
 
+    def _complete_game(self, game, next_state):
+        """Handle the completion of the game state
+
+        """
+
+        self.selected_index = None
+        self.selected_piece = None
+        self.hint_button = None
+        self.hint_pressed = False
+        self.ai_hint_index = None
+        self.ai_hint_position = None
+
+        self.ai_running_start_time = None
+        self.ai_initial_pos = None
+        self.ai_current_pos = None
+        self.ai_target_pos = None
+
+        self.ai_algorithm.stop()
+        screen_wrapper = ScreenWrapper(game.screen)
+        self.render(screen_wrapper)
+        time.sleep(0.8)
+        game.state_manager.push_state(next_state)
+
 
     def enter(self, screen):
         print("Starting Gameplay")
@@ -935,7 +957,7 @@ class GameplayState(GameState):
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 self.ai_algorithm.stop()
                 raise QuitGameException()
-
+            # Keyboard events
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
                     # Stop the AI algorithm running in the background (if it is)
@@ -945,16 +967,22 @@ class GameplayState(GameState):
                     # Callback function will handle assigning the AI's move to the corresponding variables
                     # Check how those variables are used in the events above
                     self.hint_pressed = True
-
+            # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.selected_piece is None:
                     mx, my = pygame.mouse.get_pos()
                     for i, piece in enumerate(self.game_data.pieces):
                         if piece is not None:
-                            piece_x_start = (i * 5 + 2) * CELL_SIZE
-                            piece_x_end = piece_x_start + 4 * CELL_SIZE
-                            piece_y_start = 10 * CELL_SIZE
-                            piece_y_end = piece_y_start + 4 * CELL_SIZE
+                            min_x = min(block[0] for block in piece)
+                            max_x = max(block[0] for block in piece)
+                            min_y = min(block[1] for block in piece)
+                            max_y = max(block[1] for block in piece)
+
+                            piece_x_start = (i * PIECES_LIST_BETWEEN_OFFSET_X_CELLS + PIECES_LIST_OFFSET_X_CELLS) * CELL_SIZE
+                            piece_y_start = PIECES_LIST_OFFSET_Y_CELLS * CELL_SIZE
+                            piece_x_end = piece_x_start + (max_x - min_x + 1) * CELL_SIZE
+                            piece_y_end = piece_y_start + (max_y - min_y + 1) * CELL_SIZE
+
                             if piece_x_start <= mx <= piece_x_end and piece_y_start <= my <= piece_y_end:
                                 self.selected_index = i
                                 self.selected_piece = piece
@@ -969,67 +997,51 @@ class GameplayState(GameState):
                 if self.selected_piece is not None:
                     mx, my = pygame.mouse.get_pos()
                     px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
-                    if is_valid_position(self.game_data.board, self.selected_piece, (px-4, py)):
-                        place_piece(self.game_data, self.selected_piece, (px-4, py))
+                    if is_valid_position(self.game_data.board, self.selected_piece, (px - 4, py)):
+                        place_piece(self.game_data, self.selected_piece, (px - 4, py))
                         lines_cleared, target_blocks_cleared = clear_full_lines(self.game_data.board)
-
-                        # Levels mode
                         if self.level != INFINITE:
                             self.game_data.blocks_to_break -= target_blocks_cleared
                             self.score += target_blocks_cleared
-
                             if self.game_data.blocks_to_break <= 0:
-                                self.ai_algorithm.stop()
-                                self.done = True
-
-                                # push_state() will call exit() of this state, which EXCEPTIONALLY calls render() to render the final state, so these variables need to be reset early
-                                self.selected_index = None
-                                self.selected_piece = None
-                                self.hint_pressed = False
-                                self.ai_hint_index = None
-                                self.ai_hint_position = None
-
-                                game.state_manager.push_state(LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level))
-
+                                self._complete_game(
+                                    game,
+                                    LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level)
+                                )
+                                return
                         else:
                             self.score += lines_cleared
 
-                        if not self.done:
-                            # Player made move, so state changed, then prepare next hint
-                            if (
-                                    self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
-                                    self.selected_index == self.ai_hint_index and px-4 == self.ai_hint_position[0] and py == self.ai_hint_position[1]
-                            ):
-                                # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
-                                self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
-                            elif (
-                                    self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
-                                    (self.selected_index != self.ai_hint_index or px-4 != self.ai_hint_position[0] or py != self.ai_hint_position[1])
-                            ):
-                                # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
-                                self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done, True)
+                        # All pieces placed (all None), generate new ones
+                        if not any(self.game_data.pieces):
+                            _areThereMore = self.game_data.get_more_playable_pieces()
 
-                            # All pieces placed (all None), generate new ones
-                            if not any(self.game_data.pieces):
-                                _areThereMore = self.game_data.get_more_playable_pieces()
+                        if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
+                            self._complete_game(
+                                game,
+                                GameOverState(self.score, self.player, self.ai_algorithm_id, self.level)
+                            )
+                            return
 
-                            if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
-                                self.ai_algorithm.stop()
-                                self.done = True
+                        # Player made move, so state changed, then prepare next hint
+                        if (
+                                self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
+                                self.selected_index == self.ai_hint_index and px - 4 == self.ai_hint_position[0] and py == self.ai_hint_position[1]
+                        ):
+                            # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
+                            self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
+                        elif (
+                                self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
+                                (self.selected_index != self.ai_hint_index or px - 4 != self.ai_hint_position[0] or py != self.ai_hint_position[1])
+                        ):
+                            # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
+                            self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done, True)
+                        else:
+                            self.ai_hint_index = None
+                            self.ai_hint_position = None
 
-                                # push_state() will call exit() of this state, which EXCEPTIONALLY calls render() to render the final state, so these variables need to be reset early
-                                self.selected_index = None
-                                self.selected_piece = None
-                                self.hint_pressed = False
-                                self.ai_hint_index = None
-                                self.ai_hint_position = None
-
-                                game.state_manager.push_state(GameOverState(self.score, self.player, self.ai_algorithm_id, self.level))
-
-                        # Clear the current hint
                         self.hint_pressed = False
-                        self.ai_hint_index = None
-                        self.ai_hint_position = None
+
                     else:
                         # Restore visibility if not placed
                         for i, piece in enumerate(self.game_data.pieces):
@@ -1038,7 +1050,6 @@ class GameplayState(GameState):
 
                     self.selected_index = None
                     self.selected_piece = None
-                    self.done = False
 
     def update_ai(self, game, events):
         for event in events:
@@ -1064,50 +1075,34 @@ class GameplayState(GameState):
                         self.score += target_blocks_cleared
 
                         if self.game_data.blocks_to_break <= 0:
-                            self.ai_algorithm.stop()
-                            self.done = True
-
-                            # push_state() will call exit() of this state, which EXCEPTIONALLY calls render() to render the final state, so these variables need to be reset early
-                            self.selected_piece = None
-                            self.ai_initial_pos = None
-                            self.ai_current_pos = None
-                            self.ai_target_pos = None
-
-                            game.state_manager.push_state(LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level))
+                            self._complete_game(game, LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level))
+                            return
 
                     else:
                         self.score += lines_cleared
 
-                    if not self.done:
-                        # All pieces placed (all None), generate new ones
-                        if not any(self.game_data.pieces):
-                            _areThereMore = self.game_data.get_more_playable_pieces()
+                    # All pieces placed (all None), generate new ones
+                    if not any(self.game_data.pieces):
+                        _areThereMore = self.game_data.get_more_playable_pieces()
 
-                        if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
-                            self.ai_algorithm.stop()
-                            self.done = True
-
-                            # push_state() will call exit() of this state, which EXCEPTIONALLY calls render() to render the final state, so these variables need to be reset early
-                            self.selected_piece = None
-                            self.ai_initial_pos = None
-                            self.ai_current_pos = None
-                            self.ai_target_pos = None
-
-                            game.state_manager.push_state(GameOverState(self.score, self.player, self.ai_algorithm_id, self.level))
+                    if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
+                        self._complete_game(
+                            game,
+                            GameOverState(self.score, self.player, self.ai_algorithm_id, self.level)
+                        )
+                        return
 
                     self.selected_piece = None
                     self.ai_initial_pos = None
                     self.ai_current_pos = None
                     self.ai_target_pos = None
-
-                    if not self.done:
-                        self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
-
-                    self.done = False
+                    self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
             else:
-                # AI didn't find a move (DONT KNOW WHAT TO DO HERE) TODO
-                game.state_manager.push_state(GameOverState(self.score, self.player, self.ai_algorithm_id, self.level))
-                pass
+                # AI didn't find a move, so game is lost
+                self._complete_game(
+                    game,
+                    GameOverState(self.score, self.player, self.ai_algorithm_id, self.level)
+                )
         else:
             # Do nothing, the AI is still running
             pass
@@ -1149,6 +1144,9 @@ class GameplayState(GameState):
             draw_piece(game.screen, self.selected_piece, (px, py), True, GRID_OFFSET_Y)
 
         # Hint button
+        self.hint_button = pygame.draw.circle(game.screen, ORANGE, (SCREEN_WIDTH - 50, 50), 30)
+        game.screen.blit(hint_icon, self.hint_button.topleft)
+        game.screen.blit(hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
         if self.ai_hint_index is None or self.ai_hint_position is None:
             # If no hint is available, grey out the hint button
             self.hint_button = pygame.draw.circle(game.screen, (128, 128, 128), (SCREEN_WIDTH - 50, 50), 30)
@@ -1226,16 +1224,6 @@ class GameplayState(GameState):
     def exit(self, screen):
         print("Exiting Gameplay")
 
-        # If the game is done, show the final state for a while, then move to the next state
-        if self.done:
-            screen_wrapper = ScreenWrapper(screen)
-            self.render(screen_wrapper)
-            time.sleep(0.8)
-
-
-        # Stop the AI algorithm running in the background
-        # This way, it also stops when the game is paused (which is kind of a waste of time)
-        # self.ai_algorithm.stop()
 
 class PauseState(GameState):
     """Pause menu
