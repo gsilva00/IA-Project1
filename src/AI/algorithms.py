@@ -346,6 +346,8 @@ class GreedySearchAlgorithm(AIAlgorithm):
         pqueue.put(root)                     # Add the root node to the priority queue
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
 
+        inheritance = True                   # Inherit the score from the parent node
+
         while not pqueue.empty():
             if self.stop_flag:
                 print("Algorithm stopped early")
@@ -363,7 +365,7 @@ class GreedySearchAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        greedy_heuristic(node, node.state, child_state)
+                        greedy_heuristic(node, child_state, root.state.blocks_to_break, inheritance)
                     )
                     node.add_child(child_node)
 
@@ -396,7 +398,7 @@ class AStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic(node, node.state, child_state) + (node.path_cost + 1)
+                        a_star_heuristic(child_state) + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
@@ -411,7 +413,7 @@ class WeightedAStarAlgorithm(AIAlgorithm):
         pqueue = q.PriorityQueue()           # Priority queue for node storing
         pqueue.put(root)                     # Add the root node to the priority queue
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
-        weight = 2                           # Weight for the heuristic function (can be adjusted)
+        weight = 4                           # Weight for the heuristic function (can be adjusted)
 
         while not pqueue.empty():
             if self.stop_flag:
@@ -430,7 +432,7 @@ class WeightedAStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic(node, node.state, child_state) * weight + (node.path_cost + 1)
+                        a_star_heuristic(child_state) * weight + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
