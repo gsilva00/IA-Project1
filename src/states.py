@@ -868,6 +868,8 @@ class GameplayState(GameState):
         self.ai_current_pos = None
         self.ai_target_pos = None
 
+        self.finished_game_message = None
+
 
     def _toggle_ai_running_time(self):
         """Toggle the AI running time to start or stop the timer
@@ -912,18 +914,18 @@ class GameplayState(GameState):
         elif status == AI_NOT_FOUND:
             print("AI didn't find a move")
 
-    def _complete_game(self, game, next_state):
+    def _finish_game(self, game, next_state, message):
         """Handle the completion of the game state
 
         """
 
+        # Clean the gameplay-related variables for the last render() call - to display the end state and message
         self.selected_index = None
         self.selected_piece = None
         self.hint_button = None
         self.hint_pressed = False
         self.ai_hint_index = None
         self.ai_hint_position = None
-
         self.ai_running_start_time = None
         self.ai_initial_pos = None
         self.ai_current_pos = None
@@ -931,8 +933,9 @@ class GameplayState(GameState):
 
         self.ai_algorithm.stop()
         screen_wrapper = ScreenWrapper(game.screen)
+        self.finished_game_message = message
         self.render(screen_wrapper)
-        time.sleep(0.8)
+        time.sleep(2)
         game.state_manager.push_state(next_state)
 
 
@@ -1004,9 +1007,10 @@ class GameplayState(GameState):
                             self.game_data.blocks_to_break -= target_blocks_cleared
                             self.score += target_blocks_cleared
                             if self.game_data.blocks_to_break <= 0:
-                                self._complete_game(
+                                self._finish_game(
                                     game,
-                                    LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level)
+                                    LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level),
+                                    f'Level {self.level} completed!'
                                 )
                                 return
                         else:
@@ -1017,9 +1021,10 @@ class GameplayState(GameState):
                             _areThereMore = self.game_data.get_more_playable_pieces()
 
                         if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
-                            self._complete_game(
+                            self._finish_game(
                                 game,
-                                GameOverState(self.score, self.player, self.ai_algorithm_id, self.level)
+                                GameOverState(self.score, self.player, self.ai_algorithm_id, self.level),
+                                'Game Over! No more valid moves!'
                             )
                             return
 
@@ -1075,7 +1080,11 @@ class GameplayState(GameState):
                         self.score += target_blocks_cleared
 
                         if self.game_data.blocks_to_break <= 0:
-                            self._complete_game(game, LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level))
+                            self._finish_game(
+                                game,
+                                LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level),
+                                f'Level {self.level} completed!'
+                            )
                             return
 
                     else:
@@ -1086,9 +1095,10 @@ class GameplayState(GameState):
                         _areThereMore = self.game_data.get_more_playable_pieces()
 
                     if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
-                        self._complete_game(
+                        self._finish_game(
                             game,
-                            GameOverState(self.score, self.player, self.ai_algorithm_id, self.level)
+                            GameOverState(self.score, self.player, self.ai_algorithm_id, self.level),
+                            'Game Over! No more valid moves!'
                         )
                         return
 
@@ -1099,9 +1109,10 @@ class GameplayState(GameState):
                     self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
             else:
                 # AI didn't find a move, so game is lost
-                self._complete_game(
+                self._finish_game(
                     game,
-                    GameOverState(self.score, self.player, self.ai_algorithm_id, self.level)
+                    GameOverState(self.score, self.player, self.ai_algorithm_id, self.level),
+                    "Game Over! AI didn't find a move!"
                 )
         else:
             # Do nothing, the AI is still running
@@ -1218,6 +1229,16 @@ class GameplayState(GameState):
             game.screen.blit(overlay, (0, 0))
             game.screen.blit(algorithm_text, algorithm_time_rect)
             game.screen.blit(elapsed_time_text, elapsed_time_rect)
+
+        if self.finished_game_message is not None:
+            message_text = text_font.render(self.finished_game_message, True, WHITE)
+            message_rect = message_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            overlay.set_alpha(64)  # Set transparency level (0-255)
+            overlay.fill((0, 0, 0))  # Black color
+            game.screen.blit(overlay, (0, 0))
+            game.screen.blit(message_text, message_rect)
 
         pygame.display.flip()
 
