@@ -15,6 +15,14 @@ def get_num_states():
 
     return _num_states
 
+def reset_num_states():
+    """Reset the number of states generated in another module
+
+    """
+
+    global _num_states
+    _num_states = 0
+
 def child_states(game_state):
     """Generate all possible child states from the current state of the game being played
 

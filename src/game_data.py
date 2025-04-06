@@ -9,7 +9,7 @@ from game_logic.rules import generate_pieces
 class GameData:
     def __init__(self, level=INFINITE, file_path=None):
         self.board = copy.deepcopy(LEVEL_BOARDS[level if level != CUSTOM else 1]) if level != INFINITE else [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
-        self.following_pieces = generate_pieces()
+        self.following_pieces = generate_pieces(level)
         self.pieces = []
         _areThereMore = self.get_more_playable_pieces()
         self.blocks_to_break = copy.deepcopy(LEVEL_BLOCKS[level if level != CUSTOM else 1]) if level != INFINITE else 0

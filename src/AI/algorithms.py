@@ -6,12 +6,11 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from AI.algorithm_registry import AIAlgorithmRegistry
-from AI.heuristics import (a_star_heuristic, a_star_heuristic_2,
-                           greedy_heuristic, infinite_heuristic)
+from AI.heuristics import (a_star_heuristic, greedy_heuristic, infinite_heuristic)
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
                                   GREEDY, INFINITE, ITER_DEEP, SINGLE_DEPTH_GREEDY, LEVELS_NAMES,
                                   WEIGHTED_A_STAR)
-from utils.ai import child_states, get_num_states, goal_state
+from utils.ai import child_states, get_num_states, goal_state, reset_num_states
 from utils.file import moves_to_file, stats_to_file
 
 
@@ -158,9 +157,6 @@ class AIAlgorithm:
         self.time_callback_func()
 
         self.result = future.result()
-        print(f"Future: {self.future}")
-        print(f"Other future: {future}")
-        print(f"Are they the same? {self.future == future}")
 
         if self.result is None:
             if self.res_callback_func is not None:
@@ -171,20 +167,21 @@ class AIAlgorithm:
         status = AI_FOUND if piece_index is not None and piece_position is not None else AI_NOT_FOUND
 
         if self.res_callback_func is not None:
+            print(f"[{type(self).__name__}] Calling result callback function...")
             self.res_callback_func(status, piece_index, piece_position)
+        else:
+            print(f"[{type(self).__name__}] No result callback function defined.")
 
     def _process_result(self):
         self.next_state = self.result[0].state
-        print(f"[{type(self).__name__}] Result list: {self.result}")
         # Remove the state that is being played from the result (to avoid playing the same move again in the next call)
         self.result = self.result[1:] if len(self.result) > 1 else None
-        print(f"[{type(self).__name__}] Result list after removing the state being played: {self.result}")
 
         print(f"Piece: {self.next_state.recent_piece[0]}, Piece position: {self.next_state.recent_piece[1]}")
         for i, piece in enumerate(self.current_state.pieces):
-            print(f"Piece {i}: {piece}")
+            # print(f"Piece {i}: {piece}")
             if self.next_state.recent_piece[0] == piece:
-                print(f"Piece index: {i}, Piece position: {self.next_state.recent_piece[1]}")
+                # print(f"Piece index: {i}, Piece position: {self.next_state.recent_piece[1]}")
                 return i, self.next_state.recent_piece[1]
 
     def run_algorithm(self, infinite=False):
@@ -232,6 +229,7 @@ class AIAlgorithm:
             num_states,
             len(result) if result else 0
         )
+        reset_num_states()
 
         if result is not None:
             moves_to_file(
@@ -243,15 +241,15 @@ class AIAlgorithm:
                 [(node.state.recent_piece[0], node.state.recent_piece[1]) for node in result]
             )
 
-        print(f"[{type(self).__name__}] Level: {LEVELS_NAMES[self.level]}")
-        print(f"[{type(self).__name__}] Did the algorithm find a solution? {'Yes' if result else 'No'}")
-        print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
-        print(f"[{type(self).__name__}] Peak Memory Used: {peak_mem / (1024 * 1024):.4f} MB")
-        print(f"[{type(self).__name__}] States: {num_states}")
-        print(f"[{type(self).__name__}] Number of moves: {len(result) if result else 0}")
-        print(f"[{type(self).__name__}] Moves:")
-        for i, node in enumerate(result):
-            print(f"[{type(self).__name__}] Piece {i+1}: {node.state.recent_piece[0]} to Position: {node.state.recent_piece[1]}")
+        # print(f"[{type(self).__name__}] Level: {LEVELS_NAMES[self.level]}")
+        # print(f"[{type(self).__name__}] Did the algorithm find a solution? {'Yes' if result else 'No'}")
+        # print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
+        # print(f"[{type(self).__name__}] Peak Memory Used: {peak_mem / (1024 * 1024):.4f} MB")
+        # print(f"[{type(self).__name__}] States: {num_states}")
+        # print(f"[{type(self).__name__}] Number of moves: {len(result) if result else 0}")
+        # print(f"[{type(self).__name__}] Moves:")
+        # for i, node in enumerate(result):
+        #     print(f"[{type(self).__name__}] Piece {i+1}: {node.state.recent_piece[0]} to Position: {node.state.recent_piece[1]}")
 
         return result
 
@@ -496,7 +494,9 @@ class GreedySearchAlgorithm(AIAlgorithm):
         return None  # No valid moves found
 
 class SingleDepthGreedyAlgorithm(AIAlgorithm):
-    """Refactored to evaluate all possible moves at depth 1 and choose the best move based on the heuristic function.
+    """Implements the Single Depth Greedy Search algorithm for the AI to find the next move to play among only the first level of children nodes.
+    It uses a heuristic function to evaluate the nodes and choose the best one to explore next.
+    It is a simplified version of the Greedy Search algorithm, which only explores the first level of children nodes.
 
     Time Complexity:
         O(b * (<complexity of operators_func()> + <complexity of heuristic_func()>)) == O(b * (p * g^4 + p * g^2 * k)),
@@ -508,6 +508,7 @@ class SingleDepthGreedyAlgorithm(AIAlgorithm):
 
     Space Complexity:
         O(b), where b is the branching factor.
+
     """
 
     def __init__(self, level):
