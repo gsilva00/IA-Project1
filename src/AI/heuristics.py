@@ -4,6 +4,18 @@ from game_logic.rules import (clear_full_lines, no_more_valid_moves, place_piece
 
 # Heuristic for greedy best first search algorithm with the option to inherit the score from the parent node
 def greedy_heuristic(parent, current, total_blocks, inheritance):
+    """Greedy heuristic function for evaluating the state of the game board.
+
+    Args:
+        parent (TreeNode): The parent node of the current state.
+        current (GameData): The current state of the game board.
+        total_blocks (int): The total number of blocks to break in the level.
+        inheritance (bool): Flag indicating whether to inherit the score from the parent node.
+
+    Returns:
+        float: The heuristic score for the current state.
+    """
+
     score = 0
     (piece, (px, py)) = current.recent_piece
     temp_state = copy.deepcopy(parent.state)
@@ -42,16 +54,26 @@ def greedy_heuristic(parent, current, total_blocks, inheritance):
     else:
         if no_more_valid_moves(current.board, current.pieces):
             return float('inf')  # Deadlock
-    
+
     # 6º) Inherit target block break score from the parent node
     if (inheritance):
         score += (total_blocks - parent.state.blocks_to_break) * 20
 
     return (10000 - score) / 10 # Normalize the score
 
-# Admissible heuristic for A* algorithm
-#Never overestimates the cost to reach the goal state from the current state
+
 def a_star_heuristic(current):
+    """Admissible heuristic function for A* algorithm.
+    This heuristic estimates the cost to reach the goal state from the current state without overestimating it.
+
+    Args:
+        current (GameData): The current state of the game board.
+
+    Returns:
+        int: The heuristic score for the current state.
+
+    """
+
     rows_with_targets = set()
     cols_with_targets = set()
 
@@ -69,6 +91,18 @@ def a_star_heuristic(current):
     return min(line_to_clear, column_to_clear)
 
 def a_star_heuristic_2(current):
+    """Admissible heuristic function for A* algorithm.
+    This heuristic estimates the cost to reach the goal state from the current state without overestimating it.
+    This heuristic is more complex than the previous one and considers the Manhattan distance to target blocks.
+
+    Args:
+        current (GameData): The current state of the game board.
+
+    Returns:
+        int: The heuristic score for the current state.
+
+    """
+
     rows_with_targets = set()
     cols_with_targets = set()
     target_positions = []
@@ -104,6 +138,17 @@ def a_star_heuristic_2(current):
     return line_to_clear + column_to_clear + min_distance
 
 def infinite_heuristic(parent, current):
+    """Heuristic function for the infinite game mode.
+
+    Args:
+        parent (TreeNode): The parent node of the current state.
+        current (GameData): The current state of the game board.
+
+    Returns:
+        float: The heuristic score for the current state.
+
+    """
+
     score = 0
     (piece, (px, py)) = current.recent_piece
     temp_state = copy.deepcopy(parent.state)

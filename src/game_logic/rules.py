@@ -8,6 +8,7 @@ def generate_pieces():
 
     Returns:
         List[List[int]]: List of 99 pieces (divided in lists of 3), each piece is a list of pairs (x, y), each pair represents a block in the piece.
+
     """
 
     return [[random.choice(PIECES) for _ in range(3)] for _ in range(33)]
@@ -20,6 +21,7 @@ def place_piece(game_data, piece, position, hint=False):
         piece (List[Tuple[int, int]]): The piece to place.
         position (Tuple[int, int]): The position to place the piece.
         hint (bool): If True, place the piece as a hint (not permanent and different value to indicate hint and differentiate color).
+
     """
 
     game_data.recent_piece = (piece, position)
@@ -36,6 +38,7 @@ def clear_full_lines(board):
 
     Returns:
         Tuple[int, int]: The number of lines and columns cleared, and the number of target blocks cleared.
+
     """
 
     # Sets to avoid counting the same line/column/block multiple times
@@ -102,6 +105,7 @@ def is_valid_position(board, piece, position):
 
     Returns:
         bool: True if the piece can be placed, False otherwise
+
     """
 
     px, py = position
@@ -121,6 +125,7 @@ def no_more_valid_moves(board, pieces):
 
     Returns:
         bool: True if there are no more valid moves, False otherwise.
+
     """
 
     for piece in pieces:
