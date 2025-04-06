@@ -16,9 +16,11 @@ from utils.file import stats_to_file
 # For running AI algorithms in parallel
 executor = ThreadPoolExecutor(max_workers=1)
 
+
 class TreeNode:
     def __init__(self, state, parent=None, path_cost=0, depth=0, heuristic_score=0):
         """Initializes a new TreeNode object.
+
         Args:
             state (GameData): The state of the game (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
             parent (TreeNode, optional): The parent node of the current node. Defaults to None.
@@ -242,8 +244,18 @@ class AIAlgorithm:
             print(f"Node n's state: {n.state}")
         return nodes
 
+
 class BFSAlgorithm(AIAlgorithm):
     """Implements the Breadth-First Search algorithm (BFS) for the AI to find the next move to play.
+
+    Time Complexity:
+        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()>) == O(b^d * (p * g^4 + 1)) == O(b^d * p * g^4), where:
+        - b is the branching factor
+        - d is the depth of the solution
+        - p is the number of currently playable pieces
+        - g is the grid size
+    Space Complexity:
+        O(b^d), where b is the branching factor and d is the depth of the solution.
 
     """
 
@@ -272,9 +284,20 @@ class BFSAlgorithm(AIAlgorithm):
 
         return None # No valid moves found
 
+
 class DFSAlgorithm(AIAlgorithm):
     """Implements the Depth-First Search algorithm (DFS) for the AI to find the next move to play.
     It uses the iterative version of the algorithm, which is more efficient than the recursive version, especially for large search trees.
+
+    Time Complexity:
+        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()>) == O(b^d * (p * g^4 + 1)) == O(b^d * p * g^4), where:
+        - b is the branching factor
+        - d is the depth of the solution
+        - p is the number of currently playable pieces
+        - g is the grid size
+
+    Space Complexity:
+        O(b * d), where b is the branching factor and d is the depth of the solution.
 
     """
 
@@ -304,10 +327,24 @@ class DFSAlgorithm(AIAlgorithm):
 
         return None  # No valid moves found
 
+
 class IterDeepAlgorithm(AIAlgorithm):
     """Implements the Iterative Deepening Search algorithm (IDS) for the AI to find the next move to play.
     Since it uses DFS to visit the nodes, the code uses the iterative version of the DFS, which is more efficient than the recursive version, especially for large search trees.
     It also uses a depth limit, to limit the search of each DFS, which is better for a large search space.
+
+    Time Complexity:
+        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()>) == O(b^d * (p * g^4 + 1)) == O(b^d * p * g^4), where:
+        - b is the branching factor
+        - d is the depth of the solution
+        - p is the number of currently playable pieces
+        - g is the grid size
+
+    Note: b^d is a simplification of the time complexity of the algorithm, since it is actually d*b^1 + (d-1)b^2 + (d-2)b^3 + ... + 2b^(d-1) + b^d, therefore the dominant term is b^d.
+          - Still, because of this, it is less efficient than DFS, since it visits the same nodes multiple times.
+
+    Space Complexity:
+        O(b * d), where b is the branching factor and d is the depth of the solution.
 
     """
 
@@ -362,6 +399,19 @@ class GreedySearchAlgorithm(AIAlgorithm):
     """Implements the Greedy Search algorithm for the AI to find the next move to play.
     It uses a heuristic function to evaluate the nodes and choose the best one to explore next.
 
+    Time Complexity:
+        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()> + <complexity of greedy_heuristic()>) == O(b^d * (p * g^4 + 1 + p * g^2 * b)) == O(b^d * p * g^4), where:
+        - b is the branching factor
+        - d is the depth of the solution
+        - p is the number of currently playable pieces
+        - g is the grid size
+
+    Space Complexity:
+        O(b^d), where b is the branching factor and d is the depth of the solution.
+
+    Note: Due to the heuristic function, the algorithm is way more efficient than the Big-O notation suggests, as it doesn't explore nearly as many nodes as the worst case scenario.
+    Of course, this depends on the quality of the heuristic function, and in this case, it is very good.
+
     """
 
     def _execute_algorithm(self):
@@ -402,6 +452,21 @@ class AStarAlgorithm(AIAlgorithm):
     """Implements the A* Search algorithm for the AI to find the next move to play.
     It uses a heuristic function and the cost from the starting node to the current one to evaluate the nodes and choose the best one to explore next.
 
+    Time Complexity:
+        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()> + <complexity of a_star_heuristic()>) == O(b^d * (p * g^4 + 1 + g^2)) == O(b^d * p * g^4), where:
+        - b is the branching factor
+        - d is the depth of the solution
+        - p is the number of currently playable pieces
+        - g is the grid size
+
+    Space Complexity:
+        O(b^d), where b is the branching factor and d is the depth of the solution.
+
+    Note: Due to the heuristic function, this algorithm is way more efficient than the Big-O notation suggests, as it doesn't explore nearly as many nodes as the worst case scenario, due to the heuristic function.
+    However, unlike the Greedy Search algorithm, this algorithm is guaranteed to find the optimal solution, if the heuristic function is admissible (which it is in this case).
+    The heuristic function is admissible if it never overestimates the cost to reach the goal state from the current state.
+    The quality of the heuristic function is very important for the performance of the algorithm, as it determines how many nodes are explored. And the closer it is to the actual cost, the better the performance of the algorithm.
+
     """
 
     def _execute_algorithm(self):
@@ -440,6 +505,19 @@ class WeightedAStarAlgorithm(AIAlgorithm):
     """Implements the Weighted A* Search algorithm for the AI to find the next move to play.
     It uses a heuristic function and the cost from the starting node to the current one to evaluate the nodes and choose the best one to explore next.
     The heuristic function is weighted to make the algorithm more aggressive in its search (higher weight == more aggressive search).
+
+    Time Complexity:
+        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()> + <complexity of a_star_heuristic()>) == O(b^d * (p * g^4 + 1 + g^2)) == O(b^d * p * g^4), where:
+        - b is the branching factor
+        - d is the depth of the solution
+        - p is the number of currently playable pieces
+        - g is the grid size
+
+    Space Complexity:
+        O(b^d), where b is the branching factor and d is the depth of the solution.
+
+    Note: Due to the heuristic function, this algorithm is way more efficient than the Big-O notation suggests, as it doesn't explore nearly as many nodes as the worst case scenario, due to the heuristic function.
+    Due to the weighted heuristic function, this algorithm is more aggressive than the A* Search algorithm, which means that it will explore less nodes and find the solution faster, but it is not guaranteed to find the optimal solution, but it will find a satisfactory solution in a reasonable amount of time.
 
     """
 

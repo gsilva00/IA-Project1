@@ -25,6 +25,10 @@ class GameData:
         Returns:
             bool: True if there are more pieces to play, False otherwise.
 
+        Time Complexity:
+            if there are no more pieces to play - O(1) since it will return immediately.
+            if there are more pieces to play - O(f + 3) == O(f), where f is the number of following_pieces elements (between 1 and 33) and 3 is the number of pieces to play.
+
         """
 
         if not any(self.pieces):
