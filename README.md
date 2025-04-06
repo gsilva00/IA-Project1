@@ -6,6 +6,19 @@
 
 ### How to run the project
 
+> Ensure you have Python 3.x is installed on your system.
+> Also ensure that you have pip3 installed. It is included by default in Python 3.4 and later versions.
+
+1. Clone the repository
+2. Navigate to the project directory
+3. Install the required packages
+
+```bash
+pip3 install pygame
+```
+
+4. Run the project
+
 ```bash
 python3 src/main.py
 ```
