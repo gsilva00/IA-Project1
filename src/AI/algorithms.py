@@ -7,12 +7,13 @@ from datetime import datetime
 
 from AI.algorithm_registry import AIAlgorithmRegistry
 from AI.heuristics import (a_star_heuristic, a_star_heuristic_2,
-                           greedy_heuristic)
+                           greedy_heuristic, infinite_heuristic)
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
-                                  GREEDY, INFINITE, ITER_DEEP, LEVELS_NAMES,
+                                  GREEDY, INFINITE, ITER_DEEP, SINGLE_DEPTH_GREEDY, LEVELS_NAMES,
                                   WEIGHTED_A_STAR)
 from utils.ai import child_states, get_num_states, goal_state
 from utils.file import moves_to_file, stats_to_file
+
 
 # For running AI algorithms in parallel
 executor = ThreadPoolExecutor(max_workers=1)
@@ -70,7 +71,7 @@ class AIAlgorithm:
 
         self.level = level
 
-        self.goal_state_func = goal_state if self.level != INFINITE else None # TODO: Implement goal state function for infinite level (EXTRA FEATURE)
+        self.goal_state_func = goal_state if self.level != INFINITE else None # No goal state function for infinite level
         self.operators_func = child_states
         self.time_callback_func = None
         self.res_callback_func = None
@@ -120,10 +121,14 @@ class AIAlgorithm:
         self.current_state = game_data
 
         # No results yet/anymore, so run the algorithm (again)
-        if self.result is None:
-            if self.future is None:
+        if self.result is None or self.result == []:
+            if self.future is None or self.future.done():
+                # Run the algorithm in a separate thread
                 print(f"[{type(self).__name__}] Submitting algorithm...")
-                self.future = executor.submit(self.run_algorithm)
+                if self.level == INFINITE:
+                    self.future = executor.submit(self.run_algorithm, infinite=True)
+                else:
+                    self.future = executor.submit(self.run_algorithm)
                 self.future.add_done_callback(self._on_algorithm_done)
 
                 if self.time_callback_func is not None:
@@ -150,6 +155,9 @@ class AIAlgorithm:
         self.time_callback_func()
 
         self.result = future.result()
+        print(f"Future: {self.future}")
+        print(f"Other future: {future}")
+        print(f"Are they the same? {self.future == future}")
 
         if self.result is None:
             if self.res_callback_func is not None:
@@ -164,16 +172,19 @@ class AIAlgorithm:
 
     def _process_result(self):
         self.next_state = self.result[0].state
+        print(f"[{type(self).__name__}] Result list: {self.result}")
         # Remove the state that is being played from the result (to avoid playing the same move again in the next call)
         self.result = self.result[1:] if len(self.result) > 1 else None
+        print(f"[{type(self).__name__}] Result list after removing the state being played: {self.result}")
 
-        for i, piece in enumerate(self.current_state.pieces): # TODO: Change this because what if the piece played in the next state is the 2nd one, which is the same as the 1st one, it returns the index of the first one. Shouldn't be a problem, because the pieces are same. Still.
+        print(f"Piece: {self.next_state.recent_piece[0]}, Piece position: {self.next_state.recent_piece[1]}")
+        for i, piece in enumerate(self.current_state.pieces):
             print(f"Piece {i}: {piece}")
             if self.next_state.recent_piece[0] == piece:
                 print(f"Piece index: {i}, Piece position: {self.next_state.recent_piece[1]}")
                 return i, self.next_state.recent_piece[1]
 
-    def run_algorithm(self):
+    def run_algorithm(self, infinite=False):
         """Decorator function to run the AI algorithm and measure its performance (time, memory, states visited).
         Calls the actual implementation of the algorithm.
 
@@ -188,7 +199,7 @@ class AIAlgorithm:
 
         snapshot_before = tracemalloc.take_snapshot()
 
-        result = self._execute_algorithm()  # Call the actual implementation
+        result = self._execute_algorithm(infinite)  # Call the actual implementation
 
         snapshot_after = tracemalloc.take_snapshot()
 
@@ -225,6 +236,7 @@ class AIAlgorithm:
                 irl_timestamp,
                 LEVELS_NAMES[self.level],
                 elapsed_time,
+                len(result),
                 [(node.state.recent_piece[0], node.state.recent_piece[1]) for node in result]
             )
 
@@ -233,14 +245,14 @@ class AIAlgorithm:
         print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
         print(f"[{type(self).__name__}] Peak Memory Used: {peak_mem / (1024 * 1024):.4f} MB")
         print(f"[{type(self).__name__}] States: {num_states}")
-        print(f"[{type(self).__name__}] Number of moves: {len(result)}")
+        print(f"[{type(self).__name__}] Number of moves: {len(result) if result else 0}")
         print(f"[{type(self).__name__}] Moves:")
         for i, node in enumerate(result):
             print(f"[{type(self).__name__}] Piece {i+1}: {node.state.recent_piece[0]} to Position: {node.state.recent_piece[1]}")
 
         return result
 
-    def _execute_algorithm(self):
+    def _execute_algorithm(self, infinite = False):
         """Run the actual AI algorithm
 
         Returns:
@@ -286,7 +298,7 @@ class BFSAlgorithm(AIAlgorithm):
 
     """
 
-    def _execute_algorithm(self):
+    def _execute_algorithm(self, infinite = False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         queue = deque([root])                # Store the nodes
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
@@ -328,7 +340,7 @@ class DFSAlgorithm(AIAlgorithm):
 
     """
 
-    def _execute_algorithm(self):
+    def _execute_algorithm(self, infinite = False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         stack = [root]                       # Store the nodes
         visited = set()                      # Contains states, not nodes (to avoid duplicate states reached by different paths)
@@ -375,7 +387,7 @@ class IterDeepAlgorithm(AIAlgorithm):
 
     """
 
-    def _execute_algorithm(self):
+    def _execute_algorithm(self, infinite = False):
         def depth_limited_search(start_node, limit):
             stack = [start_node]        # Store the nodes
             visited = set()             # Contains states, not nodes (to avoid duplicate states reached by different paths)
@@ -442,7 +454,11 @@ class GreedySearchAlgorithm(AIAlgorithm):
 
     """
 
-    def _execute_algorithm(self):
+    def __init__(self, level):
+        super().__init__(level)
+        self.heuristic_func = greedy_heuristic
+
+    def _execute_algorithm(self, infinite = False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
         pqueue.put(root)                     # Add the root node to the priority queue
@@ -467,7 +483,7 @@ class GreedySearchAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        greedy_heuristic(node, child_state, root.state.blocks_to_break, inheritance)
+                        self.heuristic_func(node, child_state, root.state.blocks_to_break, inheritance)
                     )
                     node.add_child(child_node)
 
@@ -475,6 +491,53 @@ class GreedySearchAlgorithm(AIAlgorithm):
                     visited.add(child_state)
 
         return None  # No valid moves found
+
+class SingleDepthGreedyAlgorithm(AIAlgorithm):
+    """Refactored to evaluate all possible moves at depth 1 and choose the best move based on the heuristic function.
+
+    Time Complexity:
+        O(b * (<complexity of operators_func()> + <complexity of heuristic_func()>)) == O(b * (p * g^4 + p * g^2 * k)),
+        where:
+        - b is the branching factor (number of possible moves)
+        - p is the number of currently playable pieces
+        - g is the grid size
+        - k is the number of blocks in the piece.
+
+    Space Complexity:
+        O(b), where b is the branching factor.
+    """
+
+    def __init__(self, level):
+        print(f"[AIAlgorithm] Initializing {type(self).__name__}...")
+        super().__init__(level)
+        self.heuristic_func = infinite_heuristic  # Use the provided heuristic function
+
+    def _execute_algorithm(self, infinite=False):
+        root = TreeNode(self.current_state)  # Root node in the search tree
+        best_node = None  # Track the best node based on the heuristic score
+
+        # Explore all child states (depth 1)
+        for child_state in self.operators_func(root.state):
+            # Create a child node for each possible move
+            child_node = TreeNode(
+                child_state,
+                root,
+                path_cost=1,
+                depth=1,
+                heuristic_score=self.heuristic_func(root, child_state)
+            )
+            root.add_child(child_node)
+
+            # Update the best node if this child has a better heuristic score
+            if best_node is None or child_node.heuristic_score < best_node.heuristic_score:
+                best_node = child_node
+
+        if best_node is None:
+            print("Couldn't find any valid moves")
+            return None
+
+        # Return the best node found
+        return self.order_nodes(best_node)
 
 class AStarAlgorithm(AIAlgorithm):
     """Implements the A* Search algorithm for the AI to find the next move to play.
@@ -497,7 +560,11 @@ class AStarAlgorithm(AIAlgorithm):
 
     """
 
-    def _execute_algorithm(self):
+    def __init__(self, level):
+        super().__init__(level)
+        self.heuristic_func = a_star_heuristic
+
+    def _execute_algorithm(self, infinite = False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
         pqueue.put(root)                     # Add the root node to the priority queue
@@ -508,6 +575,8 @@ class AStarAlgorithm(AIAlgorithm):
                 print("Algorithm stopped early")
                 return None
 
+            # print("Queue size:", pqueue.qsize())
+            # print("Visited size:", len(visited))
             node = pqueue.get()
 
             if self.goal_state_func(node.state):
@@ -520,7 +589,7 @@ class AStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic_2(child_state) + (node.path_cost + 1)
+                        self.heuristic_func(child_state) + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
@@ -549,7 +618,11 @@ class WeightedAStarAlgorithm(AIAlgorithm):
 
     """
 
-    def _execute_algorithm(self):
+    def __init__(self, level):
+        super().__init__(level)
+        self.heuristic_func = a_star_heuristic
+
+    def _execute_algorithm(self, infinite = False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
         pqueue.put(root)                     # Add the root node to the priority queue
@@ -573,7 +646,7 @@ class WeightedAStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic(child_state) * weight + (node.path_cost + 1)
+                        self.heuristic_func(child_state) * weight + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
@@ -588,5 +661,6 @@ AIAlgorithmRegistry.register(BFS, BFSAlgorithm)
 AIAlgorithmRegistry.register(DFS, DFSAlgorithm)
 AIAlgorithmRegistry.register(ITER_DEEP, IterDeepAlgorithm)
 AIAlgorithmRegistry.register(GREEDY, GreedySearchAlgorithm)
+AIAlgorithmRegistry.register(SINGLE_DEPTH_GREEDY, SingleDepthGreedyAlgorithm)
 AIAlgorithmRegistry.register(A_STAR, AStarAlgorithm)
 AIAlgorithmRegistry.register(WEIGHTED_A_STAR, WeightedAStarAlgorithm)

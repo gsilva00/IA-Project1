@@ -78,7 +78,7 @@ def clear_full_lines(board):
                     board[y][x] = 0
                 # Target block
                 elif board[y][x] == 2:
-                    print("Target block cleared in line")
+                    # print("Target block cleared in line")
                     target_blocks_cleared += 1
                     board[y][x] = 0
                 # Target block with more than one hit left
@@ -97,7 +97,7 @@ def clear_full_lines(board):
                     board[y][x] = 0
                 # Target block
                 elif board[y][x] == 2:
-                    print("Target block cleared in column")
+                    # print("Target block cleared in column")
                     target_blocks_cleared += 1
                     board[y][x] = 0
                 # Target block with more than one hit left
