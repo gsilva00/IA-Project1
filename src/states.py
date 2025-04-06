@@ -44,6 +44,7 @@ class GameStateManager:
 
         Args:
             new_state (GameState): The new state to switch to
+
         """
 
         self.clear_states()
@@ -55,6 +56,7 @@ class GameStateManager:
 
         Args:
             new_state (GameState): The new state to push
+
         """
 
         if self.current_state is not None:
@@ -71,7 +73,9 @@ class GameStateManager:
 
         Returns:
             bool: True if the state was popped, False otherwise
+
         """
+
         popped = False
         for _ in range(times):
             if self.current_state is not None:
@@ -91,6 +95,7 @@ class GameStateManager:
 
         Returns:
             GameState: The state at the top of the stack
+
         """
 
         if self.state_stack:
@@ -99,13 +104,14 @@ class GameStateManager:
         return None
 
     def subst_below_switch_to(self, new_state):
-        """Switch to a new state and remove the previous state
+        """Remove the current state and substitute the one below it with a new state
 
         Args:
             new_state (GameState): The new state to switch to
 
         Returns:
             bool: True if the state was switched, False otherwise
+
         """
 
         if len(self.state_stack) > 1:
@@ -149,6 +155,7 @@ class GameState:
 
         Args:
             screen (pygame.Surface): The screen to render on
+
         """
         pass
 
@@ -158,6 +165,10 @@ class GameState:
         Args:
             game (Game): The Game object
             events (List[pygame.event.Event]): The events that have occurred
+
+        Raises:
+            QuitGameException: If the game is quit
+
         """
         pass
 
@@ -166,6 +177,7 @@ class GameState:
 
         Args:
             game (Game): The Game object
+
         """
         pass
 
@@ -175,6 +187,7 @@ class GameState:
 
         Args:
             screen (pygame.Surface): The screen to render on
+
         """
         pass
 
@@ -837,33 +850,21 @@ class GameplayState(GameState):
         self.ai_algorithm = get_ai_algorithm(self.ai_algorithm_id, level)
         self.level = level
 
-        # custom_game_data = GameData(level=1)
-        # custom_game_data.board = [
-        #     [0, 0, 0, 0, 0, 0, 0, 0],
-        #     [0, 0, 0, 0, 0, 0, 0, 0],
-        #     [0, 0, 0, 0, 0, 0, 0, 0],
-        #     [0, 0, 0, 0, 0, 0, 0, 0],
-        #     [0, 0, 0, 0, 0, 0, 0, 0],
-        #     [0, 0, 0, 0, 0, 0, 0, 0],
-        #     [0, 0, 0, 0, 0, 0, 0, 0],
-        #     [2, 1, 1, 1, 1, 1, 1, 0],
-        # ]
-
-        # custom_game_data.pieces = [[(0, 0)]]  # A single block piece
-        # custom_game_data.following_pieces = []
-        # custom_game_data.blocks_to_break = 1
-        # self.game_data = custom_game_data
         self.file_path = file_path
         self.game_data = GameData(self.level, self.file_path)
         self.score = 0
 
+        # For both gamemodes
         self.selected_index = None
         self.selected_piece = None
+
+        # For Human gamemode
         self.hint_button = None
         self.hint_pressed = False
         self.ai_hint_index = None
         self.ai_hint_position = None
 
+        # For AI gamemode
         self.ai_running_start_time = None
         self.ai_initial_pos = None
         self.ai_current_pos = None
@@ -889,6 +890,7 @@ class GameplayState(GameState):
             status (int): Status of the AI algorithm (AI_FOUND or AI_NOT_FOUND)
             piece_index (int): Index of the piece in the game_data.pieces list
             piece_position (Tuple[int, int]): Position where the piece should be placed
+
         """
 
         if status == AI_FOUND:
@@ -966,7 +968,7 @@ class GameplayState(GameState):
                     # Stop the AI algorithm running in the background (if it is)
                     game.state_manager.push_state(PauseState())
 
-                if event.key == pygame.K_h:
+                if event.key == pygame.K_h and self.ai_hint_index is not None and self.ai_hint_position is not None:
                     # Callback function will handle assigning the AI's move to the corresponding variables
                     # Check how those variables are used in the events above
                     self.hint_pressed = True
@@ -1045,9 +1047,13 @@ class GameplayState(GameState):
                                 # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
                                 self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
                             elif hinted_piece_not_placed:
+                                # Not show old hint anymore
+                                self.ai_hint_index = None
+                                self.ai_hint_position = None
                                 # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
                                 self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done, True)
                         else:
+                            # Redundant, but just in case
                             self.ai_hint_index = None
                             self.ai_hint_position = None
 
@@ -1117,7 +1123,7 @@ class GameplayState(GameState):
                 # AI didn't find a move, so game is lost
                 self._finish_game(
                     game,
-                    GameOverState(self.score, self.player, self.ai_algorithm_id, self.level),
+                    GameOverState(self.score, self.player, self.ai_algorithm_id, self.level, self.file_path),
                     "Game Over! AI didn't find a move!"
                 )
         else:
@@ -1141,7 +1147,7 @@ class GameplayState(GameState):
         screen.blit(background, (0, 0))
 
         # Draw the hint piece
-        if self.ai_hint_index is not None and self.ai_hint_position is not None and self.hint_pressed:
+        if self.hint_pressed and self.ai_hint_index is not None and self.ai_hint_position is not None:
             game_data = copy.deepcopy(self.game_data)
             piece = self.game_data.pieces[self.ai_hint_index] if self.game_data.pieces[self.ai_hint_index] is not None else self.selected_piece
             place_piece(game_data, piece, self.ai_hint_position, True)
