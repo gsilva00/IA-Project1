@@ -94,7 +94,6 @@ class AIAlgorithm:
         if self.future is not None:
             self.future.cancel()
             self.future = None
-        self.res_callback_func = None
         self.result = None
 
     def get_next_move(self, game_data, time_callback_func=None, res_callback_func=None, reset=False):
@@ -219,27 +218,28 @@ class AIAlgorithm:
         # Time of storage (to match records between stats and moves)
         irl_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        stats_to_file(
-            f"{self.__class__.__name__}_stats.csv",
-            irl_timestamp,
-            LEVELS_NAMES[self.level],
-            True if result else False,
-            elapsed_time,
-            peak_mem,
-            num_states,
-            len(result) if result else 0
-        )
-        reset_num_states()
-
-        if result is not None:
-            moves_to_file(
-                f"{self.__class__.__name__}_moves.csv",
+        if self.level != INFINITE:
+            stats_to_file(
+                f"{self.__class__.__name__}_stats.csv",
                 irl_timestamp,
                 LEVELS_NAMES[self.level],
+                True if result else False,
                 elapsed_time,
-                len(result),
-                [(node.state.recent_piece[0], node.state.recent_piece[1]) for node in result]
+                peak_mem,
+                num_states,
+                len(result) if result else 0
             )
+            reset_num_states()
+
+            if result is not None:
+                moves_to_file(
+                    f"{self.__class__.__name__}_moves.csv",
+                    irl_timestamp,
+                    LEVELS_NAMES[self.level],
+                    elapsed_time,
+                    len(result),
+                    [(node.state.recent_piece[0], node.state.recent_piece[1]) for node in result]
+                )
 
         # print(f"[{type(self).__name__}] Level: {LEVELS_NAMES[self.level]}")
         # print(f"[{type(self).__name__}] Did the algorithm find a solution? {'Yes' if result else 'No'}")
@@ -273,15 +273,13 @@ class AIAlgorithm:
             list: The list of nodes from the root (exclusive) to the goal state (inclusive).
 
         """
-        print("Called order_nodes() from the class:", type(self))
 
         nodes = []
         while node and node.state != self.current_state:
             nodes.append(node)
             node = node.parent
         nodes.reverse() # Reverse the list to get the path from the root to the goal state
-        for n in nodes:
-            print(f"Node n's state: {n.state}")
+
         return nodes
 
 
@@ -455,10 +453,6 @@ class GreedySearchAlgorithm(AIAlgorithm):
 
     """
 
-    def __init__(self, level):
-        super().__init__(level)
-        self.heuristic_func = greedy_heuristic
-
     def _execute_algorithm(self, infinite = False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
@@ -484,7 +478,7 @@ class GreedySearchAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        self.heuristic_func(node, child_state, root.state.blocks_to_break, inheritance)
+                        greedy_heuristic(node, child_state, root.state.blocks_to_break, inheritance)
                     )
                     node.add_child(child_node)
 
@@ -511,11 +505,6 @@ class SingleDepthGreedyAlgorithm(AIAlgorithm):
 
     """
 
-    def __init__(self, level):
-        print(f"[AIAlgorithm] Initializing {type(self).__name__}...")
-        super().__init__(level)
-        self.heuristic_func = infinite_heuristic  # Use the provided heuristic function
-
     def _execute_algorithm(self, infinite=False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         best_node = None  # Track the best node based on the heuristic score
@@ -526,9 +515,9 @@ class SingleDepthGreedyAlgorithm(AIAlgorithm):
             child_node = TreeNode(
                 child_state,
                 root,
-                path_cost=1,
-                depth=1,
-                heuristic_score=self.heuristic_func(root, child_state)
+                1,
+                1,
+                infinite_heuristic(root, child_state)
             )
             root.add_child(child_node)
 
@@ -564,10 +553,6 @@ class AStarAlgorithm(AIAlgorithm):
 
     """
 
-    def __init__(self, level):
-        super().__init__(level)
-        self.heuristic_func = a_star_heuristic
-
     def _execute_algorithm(self, infinite = False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
@@ -593,7 +578,7 @@ class AStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        self.heuristic_func(child_state) + (node.path_cost + 1)
+                        a_star_heuristic(child_state) + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
@@ -622,10 +607,6 @@ class WeightedAStarAlgorithm(AIAlgorithm):
 
     """
 
-    def __init__(self, level):
-        super().__init__(level)
-        self.heuristic_func = a_star_heuristic
-
     def _execute_algorithm(self, infinite = False):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
@@ -650,7 +631,7 @@ class WeightedAStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        self.heuristic_func(child_state) * weight + (node.path_cost + 1)
+                        a_star_heuristic(child_state) * weight + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 

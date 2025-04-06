@@ -64,7 +64,7 @@ class GameStateManager:
         if self.current_state is not None:
             self.current_state.exit(self.screen)
         self.state_stack.append(new_state)
-        print("Pushed state")
+        # print("Pushed state")
         new_state.enter(self.screen)
 
     def pop_state(self, times=1):
@@ -82,7 +82,7 @@ class GameStateManager:
         for _ in range(times):
             if self.current_state is not None:
                 self.state_stack.pop().exit(self.screen)
-                print("Popped state")
+                # print("Popped state")
                 popped = True
             else:
                 break
@@ -101,7 +101,7 @@ class GameStateManager:
         """
 
         if self.state_stack:
-            print("The peeked state is:", self.state_stack[-1])
+            # print("The peeked state is:", self.state_stack[-1])
             return self.state_stack[-1]
         return None
 
