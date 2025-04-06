@@ -3,6 +3,7 @@ class AIAlgorithmRegistry:
     This class is used to register and retrieve AI algorithms.
 
     """
+
     _registry = {}
 
     @classmethod
@@ -25,6 +26,7 @@ class AIAlgorithmRegistry:
 
         Returns:
             AIAlgorithm: An instance of the requested AI algorithm.
+
         """
 
         if identifier not in cls._registry:
@@ -43,6 +45,7 @@ class AIAlgorithmRegistry:
 
         Returns:
             int: The identifier of the requested AI algorithm.
+
         """
 
         print("Entering get_algorithm_id")
@@ -62,6 +65,7 @@ def get_ai_algorithm(ai_algorithm, level):
 
     Returns:
         AIAlgorithm: An instance of the requested AI algorithm.
+
     """
 
     print("Entering get_ai_algorithm")
@@ -78,6 +82,7 @@ def get_ai_algorithm_id(ai_algorithm):
 
     Returns:
         int: The identifier of the requested AI algorithm.
+
     """
 
     return AIAlgorithmRegistry.get_algorithm_id(ai_algorithm)

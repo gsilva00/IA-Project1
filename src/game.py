@@ -19,6 +19,10 @@ class Game:
 
     def update(self):
         """Update the game state.
+        This method handles the game state updates and events.
+
+        Raises:
+            QuitGameException: If the game is requested to quit.
 
         """
 
@@ -33,6 +37,13 @@ class Game:
         self.state_manager.current_state.render(self.screen)
 
     def run(self):
+        """Run the main game loop at 60 frames per second.
+        Handles the game state updates and rendering.
+        Handles quitting the game when a QuitGameException is raised.
+        The game loop will also handle any exceptions that occur during the game.
+
+        """
+
         try:
             while True:
                 self.update()

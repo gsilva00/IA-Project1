@@ -24,6 +24,7 @@ class TreeNode:
             path_cost (int, optional): The cost to reach the current node from the root node. Defaults to 0.
             depth (int, optional): The depth of the current node in the search tree. Defaults to 0.
             heuristic_score (int, optional): The score of the node based on the heuristic function. Defaults to 0.
+
         """
 
         self.state = state
@@ -38,6 +39,7 @@ class TreeNode:
 
         Args:
             child_node (TreeNode): The child node to add.
+
         """
 
         self.children.append(child_node)
@@ -52,7 +54,9 @@ class TreeNode:
 
         Returns:
             bool: True if this node is less than the other node, False otherwise.
+
         """
+
         return self.heuristic_score < other.heuristic_score
 
 class AIAlgorithm:
@@ -133,7 +137,9 @@ class AIAlgorithm:
 
         Args:
             future (Future): The future object that contains the result of the algorithm.
+
         """
+
         print(f"[{type(self).__name__}] Algorithm done.")
         self.time_callback_func()
 
@@ -216,6 +222,7 @@ class AIAlgorithm:
 
         Returns:
             list: The list of nodes from the root (exclusive) to the goal state (inclusive).
+
         """
         print("Called order_nodes() from the class:", type(self))
 
@@ -341,6 +348,11 @@ class IterDeepAlgorithm(AIAlgorithm):
                 return result
 
 class GreedySearchAlgorithm(AIAlgorithm):
+    """Implements the Greedy Search algorithm for the AI to find the next move to play.
+    It uses a heuristic function to evaluate the nodes and choose the best one to explore next.
+
+    """
+
     def _execute_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
@@ -376,6 +388,11 @@ class GreedySearchAlgorithm(AIAlgorithm):
         return None  # No valid moves found
 
 class AStarAlgorithm(AIAlgorithm):
+    """Implements the A* Search algorithm for the AI to find the next move to play.
+    It uses a heuristic function and the cost from the starting node to the current one to evaluate the nodes and choose the best one to explore next.
+
+    """
+
     def _execute_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
@@ -409,6 +426,12 @@ class AStarAlgorithm(AIAlgorithm):
         return None  # No valid moves found
 
 class WeightedAStarAlgorithm(AIAlgorithm):
+    """Implements the Weighted A* Search algorithm for the AI to find the next move to play.
+    It uses a heuristic function and the cost from the starting node to the current one to evaluate the nodes and choose the best one to explore next.
+    The heuristic function is weighted to make the algorithm more aggressive in its search (higher weight == more aggressive search).
+
+    """
+
     def _execute_algorithm(self):
         root = TreeNode(self.current_state)  # Root node in the search tree
         pqueue = q.PriorityQueue()           # Priority queue for node storing
