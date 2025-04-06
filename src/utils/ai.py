@@ -21,6 +21,12 @@ def child_states(game_state):
     Args:
         game_state (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
 
+    Time Complexity:
+        If there are no pieces to play, the time complexity is O(<get_more_playable_pieces()> + <child_states()>).
+        O(p * g^2 * (<complexity of is_valid_position()> + <complexity of place_piece()> + <complexity of clear_full_lines()>)) == O(p * g^2 * (b + b + g^2)) == O(p * g^2 * (2*b + g^2)) == O(p * g^2 * g^2) == O(p * g^4), where:
+        - p is the number of currently playable pieces
+        - g is the grid size
+
     """
 
     global _num_states
@@ -54,6 +60,9 @@ def goal_state(game_state):
 
     Args:
         game_state (GameData): The current game state
+
+    Time Complexity:
+        O(1)
 
     """
 

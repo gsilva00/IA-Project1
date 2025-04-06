@@ -6,6 +6,8 @@ import time
 import pygame
 
 from AI.algorithm_registry import get_ai_algorithm
+# Extremely important to import the AI algorithms here, otherwise they won't be registered (even though they don't seem to be used.
+# This is because algorithm_registry abstracts them
 from AI.algorithms import (AIAlgorithm, AStarAlgorithm, BFSAlgorithm,
                            DFSAlgorithm, GreedySearchAlgorithm,
                            IterDeepAlgorithm, WeightedAStarAlgorithm)
@@ -17,7 +19,7 @@ from game_logic.constants import (A_STAR, AI, AI_ALGO_NAMES, AI_FOUND, AI_NOT_FO
                                   FONT_TEXT_SMALL_SIZE, FONT_TITLE_SIZE,
                                   GAME_ICON_MENU_PATH, GRAY, GREEDY,
                                   GRID_OFFSET_X, GRID_OFFSET_Y, HINT_ICON_PATH,
-                                  HUMAN, INFINITE, ITER_DEEP, LEVEL_1, LEVEL_2,
+                                  HUMAN, INFINITE, ITER_DEEP, SINGLE_DEPTH_GREEDY, LEVEL_1, LEVEL_2,
                                   LEVEL_3, LEVELS, ORANGE,
                                   PIECES_LIST_BETWEEN_OFFSET_X_CELLS,
                                   PIECES_LIST_OFFSET_X_CELLS,
@@ -848,8 +850,8 @@ class GameplayState(GameState):
     def __init__(self, player, ai_algorithm, level=INFINITE, file_path=None):
         self.player = player
         self.ai_algorithm_id = ai_algorithm
-        self.ai_algorithm = get_ai_algorithm(self.ai_algorithm_id, level)
         self.level = level
+        self.ai_algorithm = get_ai_algorithm(self.ai_algorithm_id, self.level) if player == HUMAN else get_ai_algorithm(SINGLE_DEPTH_GREEDY, self.level)
 
         self.file_path = file_path
         self.game_data = GameData(self.level, self.file_path)

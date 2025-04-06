@@ -91,8 +91,9 @@ BFS = 0
 DFS = 1
 ITER_DEEP = 2
 GREEDY = 3
-A_STAR = 4
-WEIGHTED_A_STAR = 5
+SINGLE_DEPTH_GREEDY = 4
+A_STAR = 5
+WEIGHTED_A_STAR = 6
 
 AI_ALGO_NAMES = {
     BFS: "Breadth First Search",
@@ -109,6 +110,14 @@ LEVEL_1 = 1
 LEVEL_2 = 2
 LEVEL_3 = 3
 CUSTOM = 101
+
+LEVELS_NAMES = {
+    INFINITE: "Infinite",
+    LEVEL_1: "Level 1",
+    LEVEL_2: "Level 2",
+    LEVEL_3: "Level 3",
+    CUSTOM: "Custom"
+}
 
 LEVELS = [LEVEL_1, LEVEL_2, LEVEL_3]
 

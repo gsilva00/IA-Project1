@@ -1,6 +1,7 @@
 import copy
 
-from game_logic.rules import (clear_full_lines, no_more_valid_moves, place_piece, is_valid_position)
+from game_logic.rules import clear_full_lines, no_more_valid_moves, place_piece
+
 
 # Heuristic for greedy best first search algorithm with the option to inherit the score from the parent node
 def greedy_heuristic(parent, current, total_blocks, inheritance):
@@ -14,6 +15,13 @@ def greedy_heuristic(parent, current, total_blocks, inheritance):
 
     Returns:
         float: The heuristic score for the current state.
+
+    Time Complexity:
+        O(p * g^2 * b), where:
+        - p is the number of currently playable pieces
+        - g is the grid size
+        - b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces).
+
     """
 
     score = 0
@@ -28,6 +36,7 @@ def greedy_heuristic(parent, current, total_blocks, inheritance):
     score += target_blocks_cleared * 20  # Increased weight for clearing lines
 
     # 2º) Reward proximity to clearing target blocks
+    # Time Complexity: O(b * 2*g), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces) and g is the grid size
     for x, y in piece:
         row = py + y
         col = px + x
@@ -35,6 +44,7 @@ def greedy_heuristic(parent, current, total_blocks, inheritance):
         score += sum(3 for row in parent.state.board if row[col] == 2)  # Column
 
     # 3º) Reward normal block placement near others for future clears
+    # Time Complexity: O(b * 2*g), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces) and g is the grid size
     for x, y in piece:
         row = py + y
         col = px + x
@@ -46,6 +56,7 @@ def greedy_heuristic(parent, current, total_blocks, inheritance):
         return float('-inf')  # Winning move
 
     # 5º) Penalize moves that lead to deadlocks
+    # Time Complexity: O(<complexity of no_more_valid_moves()>) == O(p * g^2 * b), where:
     if not any(current.pieces):
         if not any(current.following_pieces):
             return float('inf')
@@ -72,12 +83,16 @@ def a_star_heuristic(current):
     Returns:
         int: The heuristic score for the current state.
 
+    Time Complexity:
+        O(g^2), where g is the grid size
+
     """
 
     rows_with_targets = set()
     cols_with_targets = set()
 
     # 1º) Iterate through the board once to identify rows and columns with target blocks
+    # Time Complexity: O(g^2), where g is the grid size
     for row_idx, row in enumerate(current.board):
         for col_idx, cell in enumerate(row):
             if cell == 2:

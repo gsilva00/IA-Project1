@@ -22,6 +22,12 @@ def place_piece(game_data, piece, position, hint=False):
         position (Tuple[int, int]): The position to place the piece.
         hint (bool): If True, place the piece as a hint (not permanent and different value to indicate hint and differentiate color).
 
+    Time Complexity:
+        O(b), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces).
+        - Even in the extreme case where a piece is the whole grid, it would be O(g^2) where g is the grid size).
+        - Still, the grid size is always small (8x8). It also wouldn't be able to be expanded much more than that, due to this project being about developing search algorithms and them being needed to run in a reasonable time.
+        - The time complexity of this function is O(1) in practice, since the number of blocks in the piece is very small.
+
     """
 
     game_data.recent_piece = (piece, position)
@@ -39,6 +45,9 @@ def clear_full_lines(board):
     Returns:
         Tuple[int, int]: The number of lines and columns cleared, and the number of target blocks cleared.
 
+    Time Complexity:
+        O(g^2), where g is the size of the grid
+
     """
 
     # Sets to avoid counting the same line/column/block multiple times
@@ -49,15 +58,18 @@ def clear_full_lines(board):
     target_blocks_cleared = 0
 
     # Prepare lines and columns to clear
+    # Time Complexity: O(g^2)
     for y in range(GRID_SIZE):
         if all(board[y]):
             lines_to_clear.add(y)
 
+    # Time Complexity: O(g^2)
     for x in range(GRID_SIZE):
         if all(board[y][x] for y in range(GRID_SIZE)):
             columns_to_clear.add(x)
 
     # Clear lines
+    # Time Complexity: O(n^2), where n is the number of lines to clear (n <= g)
     for y in lines_to_clear:
         for x in range(GRID_SIZE):
             if (y, x) not in cleared_blocks:
@@ -66,7 +78,7 @@ def clear_full_lines(board):
                     board[y][x] = 0
                 # Target block
                 elif board[y][x] == 2:
-                    print("Target block cleared in line")
+                    # print("Target block cleared in line")
                     target_blocks_cleared += 1
                     board[y][x] = 0
                 # Target block with more than one hit left
@@ -76,6 +88,7 @@ def clear_full_lines(board):
                 cleared_blocks.add((y, x))
 
     # Clear columns
+    # Time Complexity: O(n^2), where n is the number of columns to clear (n <= g)
     for x in columns_to_clear:
         for y in range(GRID_SIZE):
             if (y, x) not in cleared_blocks:
@@ -84,7 +97,7 @@ def clear_full_lines(board):
                     board[y][x] = 0
                 # Target block
                 elif board[y][x] == 2:
-                    print("Target block cleared in column")
+                    # print("Target block cleared in column")
                     target_blocks_cleared += 1
                     board[y][x] = 0
                 # Target block with more than one hit left
@@ -106,6 +119,12 @@ def is_valid_position(board, piece, position):
     Returns:
         bool: True if the piece can be placed, False otherwise
 
+    Time Complexity:
+        O(b), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces.
+        Even in the extreme case where a piece is the whole grid, it would be O(g^2) where g is the grid size).
+        Still, the grid size is always small (8x8). It also wouldn't be able to be expanded much more than that, due to this project being about developing search algorithms and them being needed to run in a reasonable time.
+        The time complexity of this function is O(1) in practice, since the number of blocks in the piece is very small.
+
     """
 
     px, py = position
@@ -125,6 +144,12 @@ def no_more_valid_moves(board, pieces):
 
     Returns:
         bool: True if there are no more valid moves, False otherwise.
+
+    Time Complexity:
+        O(p * g^2 * <complexity of is_valid_position()>) == O(p * g^2 * b), where:
+        - p is the number of pieces to place
+        - g is the grid size
+        - b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces).
 
     """
 
