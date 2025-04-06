@@ -194,13 +194,19 @@ class AIAlgorithm:
 
         num_states = get_num_states()
         if result is not None:
-            print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
-            print(f"[{type(self).__name__}] Memory: {peak_mem / (1024 * 1024):.4f} MB")
-            print(f"[{type(self).__name__}] States: {num_states}")
-            print(f"[{type(self).__name__}] Number of moves: {len(result)}")
+            print(f"[{type(self).__name__}] Algorithm completed successfully.")
+
             stats_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, peak_mem, num_states, len(result))
         else:
-            print(f"[{type(self).__name__}] Algorithm did not complete.")
+            print(f"[{type(self).__name__}] Algorithm did not complete successfully. No valid moves found.")
+
+        print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
+        print(f"[{type(self).__name__}] Memory: {peak_mem / (1024 * 1024):.4f} MB")
+        print(f"[{type(self).__name__}] States: {num_states}")
+        print(f"[{type(self).__name__}] Number of moves: {len(result)}")
+        print(f"[{type(self).__name__}] Moves:")
+        for i, node in enumerate(result):
+            print(f"[{type(self).__name__}] Piece {i+1}: {node.state.recent_piece[0]} to Position: {node.state.recent_piece[1]}")
 
         return result
 
@@ -333,18 +339,22 @@ class IterDeepAlgorithm(AIAlgorithm):
             if found_new_nodes:
                 return "NOT YET EXHAUSTED"
             else:
-                "EXHAUSTED"   # Even if we increase the depth, we wouldn't find any new nodes, as we already searched whole graph
-                              # End of depth_limited_search function
+                # Even if we increase the depth, we wouldn't find any new nodes, as we already searched whole graph
+                # End of depth_limited_search function
+                "EXHAUSTED"
 
         depth_limit = 1
         while True:
             root = TreeNode(self.current_state)
             result = depth_limited_search(root, depth_limit)
-            if result == "EXHAUSTED" or result == "STOPPED":  # No new nodes were found, stop searching
+            if result == "EXHAUSTED" or result == "STOPPED":
+                # No new nodes were found, stop searching
                 return None
-            if result == "NOT YET EXHAUSTED":  # When the stack was found empty since we reached the limiting depth and no further children nodes were added
+            if result == "NOT YET EXHAUSTED":
+                # When the stack was found empty since we reached the limiting depth and no further children nodes were added
                 depth_limit += 1
-            else:                              # an answer was found before we reached empty stack
+            else:
+                # an answer was found before we reached empty stack
                 return result
 
 class GreedySearchAlgorithm(AIAlgorithm):
@@ -464,6 +474,7 @@ class WeightedAStarAlgorithm(AIAlgorithm):
                     visited.add(child_state)
 
         return None  # No valid moves found
+
 
 # Register algorithms
 AIAlgorithmRegistry.register(BFS, BFSAlgorithm)
