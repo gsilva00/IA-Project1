@@ -853,7 +853,8 @@ class GameplayState(GameState):
         # custom_game_data.following_pieces = []
         # custom_game_data.blocks_to_break = 1
         # self.game_data = custom_game_data
-        self.game_data = GameData(self.level, file_path)
+        self.file_path = file_path
+        self.game_data = GameData(self.level, self.file_path)
         self.score = 0
 
         self.selected_index = None
@@ -1009,8 +1010,8 @@ class GameplayState(GameState):
                             if self.game_data.blocks_to_break <= 0:
                                 self._finish_game(
                                     game,
-                                    LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level),
-                                    f'Level {self.level} completed!'
+                                    LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level, self.file_path),
+                                    f"{'Level ' + str(self.level) if self.level != CUSTOM else 'Custom Level'} completed!"
                                 )
                                 return
                         else:
@@ -1023,24 +1024,30 @@ class GameplayState(GameState):
                         if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
                             self._finish_game(
                                 game,
-                                GameOverState(self.score, self.player, self.ai_algorithm_id, self.level),
+                                GameOverState(self.score, self.player, self.ai_algorithm_id, self.level, self.file_path),
                                 'Game Over! No more valid moves!'
                             )
                             return
 
                         # Player made move, so state changed, then prepare next hint
                         if (
-                                self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
-                                self.selected_index == self.ai_hint_index and px - 4 == self.ai_hint_position[0] and py == self.ai_hint_position[1]
+                            self.ai_running_start_time is None and
+                            self.ai_hint_index is not None and
+                            self.ai_hint_position is not None
                         ):
-                            # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
-                            self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
-                        elif (
-                                self.ai_running_start_time is None and self.ai_hint_index is not None and self.ai_hint_position is not None and
-                                (self.selected_index != self.ai_hint_index or px - 4 != self.ai_hint_position[0] or py != self.ai_hint_position[1])
-                        ):
-                            # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
-                            self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done, True)
+                            hinted_piece_placed = (
+                                self.selected_index == self.ai_hint_index and
+                                px - 4 == self.ai_hint_position[0] and
+                                py == self.ai_hint_position[1]
+                            )
+                            hinted_piece_not_placed = not hinted_piece_placed
+
+                            if hinted_piece_placed:
+                                # Hinted piece was placed, get the next hint (if available, as some algorithms may not compute more than one hint)
+                                self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done)
+                            elif hinted_piece_not_placed:
+                                # Hinted piece was not placed, so we need to get a new hint (even if the AI computed more than one hint)
+                                self.ai_algorithm.get_next_move(self.game_data, self._toggle_ai_running_time, self._on_ai_algo_done, True)
                         else:
                             self.ai_hint_index = None
                             self.ai_hint_position = None
@@ -1082,8 +1089,8 @@ class GameplayState(GameState):
                         if self.game_data.blocks_to_break <= 0:
                             self._finish_game(
                                 game,
-                                LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level),
-                                f'Level {self.level} completed!'
+                                LevelCompleteState(self.score, self.player, self.ai_algorithm_id, self.level, self.file_path),
+                                f"{'Level ' + str(self.level) if self.level != CUSTOM else 'Custom Level'} completed!"
                             )
                             return
 
@@ -1097,7 +1104,7 @@ class GameplayState(GameState):
                     if no_more_valid_moves(self.game_data.board, self.game_data.pieces):
                         self._finish_game(
                             game,
-                            GameOverState(self.score, self.player, self.ai_algorithm_id, self.level),
+                            GameOverState(self.score, self.player, self.ai_algorithm_id, self.level, self.file_path),
                             'Game Over! No more valid moves!'
                         )
                         return
@@ -1345,15 +1352,16 @@ class GameOverState(GameState):
 
     """
 
-    def __init__(self, score, player, ai_algorithm, level):
+    def __init__(self, score, player, ai_algorithm, level, file_path=None):
         self.score = score
         self.player = player
         self.ai_algorithm = ai_algorithm
         self.level = level
+        self.file_path = file_path
 
         self.keyboard_active = False
         self.selected_option = None
-        self.play_again_rect = None
+        self.retry_level_rect = None
         self.back_rect = None
 
     def enter(self, screen):
@@ -1367,8 +1375,8 @@ class GameOverState(GameState):
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.play_again_rect.collidepoint(event.pos):
-                    game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
+                if self.retry_level_rect.collidepoint(event.pos):
+                    game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level, self.file_path))
                 elif self.back_rect.collidepoint(event.pos):
                     # Pop the GameOverState and the GameplayState
                     game.state_manager.pop_state(2)
@@ -1391,14 +1399,14 @@ class GameOverState(GameState):
                         self.selected_option = (self.selected_option + 1) % 2
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0:
-                        game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
+                        game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level, self.file_path))
                     elif self.selected_option == 1:
                         game.state_manager.pop_state(2)
 
         # Update selected option based on mouse position
         # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
         mouse_pos = pygame.mouse.get_pos()
-        if self.play_again_rect.collidepoint(mouse_pos):
+        if self.retry_level_rect.collidepoint(mouse_pos):
             self.selected_option = 0
         elif self.back_rect.collidepoint(mouse_pos):
             self.selected_option = 1
@@ -1412,7 +1420,7 @@ class GameOverState(GameState):
 
         game_over_text = title_font.render('Game Over', True, WHITE)
         score_text = subtitle_font.render(f'Score: {self.score}', True, ORANGE)
-        play_again_text = text_font.render('Retry Level', True, ORANGE if self.selected_option == 0 else WHITE)
+        retry_level_text = text_font.render('Retry Level', True, ORANGE if self.selected_option == 0 else WHITE)
         back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == 1 else WHITE)
 
         # Non-interactable rectangles
@@ -1420,13 +1428,13 @@ class GameOverState(GameState):
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2.5))
 
         # Interactable rectangles
-        self.play_again_rect = play_again_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.7))
+        self.retry_level_rect = retry_level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.7))
         self.back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.4))
 
         game.screen.fill(BROWN)
         game.screen.blit(game_over_text, game_over_rect)
         game.screen.blit(score_text, score_rect)
-        game.screen.blit(play_again_text, self.play_again_rect)
+        game.screen.blit(retry_level_text, self.retry_level_rect)
         game.screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
@@ -1438,11 +1446,12 @@ class LevelCompleteState(GameState):
 
     """
 
-    def __init__(self, score, player, ai_algorithm, level):
+    def __init__(self, score, player, ai_algorithm, level, file_path=None):
         self.score = score
         self.player = player
         self.ai_algorithm = ai_algorithm
         self.level = level
+        self.file_path = file_path
 
         self.keyboard_active = False
         self.selected_option = None
@@ -1450,21 +1459,36 @@ class LevelCompleteState(GameState):
         self.play_next_rect = None
         self.back_rect = None
 
+    def _get_level_flags(self):
+        """Returns boolean flags used in update() and render().
+        - is_last_level: True if the level is the last one
+        - is_custom_level_with_file: True if the level is CUSTOM and a file path is provided
+        - has_next_level_option: True if the level is not the last one and not a custom level with a file path
+
+        """
+
+        is_last_level = self.level == LEVELS[-1]
+        is_custom_level_with_file = self.level == CUSTOM and self.file_path is not None
+        has_next_level_option = not is_last_level and not is_custom_level_with_file
+        return is_last_level, is_custom_level_with_file, has_next_level_option
+
     def enter(self, screen):
         print("Entering Level Complete")
         self.keyboard_active = False
         self.selected_option = None
 
     def update(self, game, events):
+        _, _, has_next_level_option = self._get_level_flags()
+
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException()
             # Mouse click events
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.level != LEVELS[-1] and self.next_level_rect is not None and self.next_level_rect.collidepoint(event.pos):
-                    game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level + 1))
+                if has_next_level_option and self.next_level_rect is not None and self.next_level_rect.collidepoint(event.pos):
+                    game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level + 1, self.file_path))
                 elif self.play_next_rect.collidepoint(event.pos):
-                    game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
+                    game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level, self.file_path))
                 elif self.back_rect.collidepoint(event.pos):
                     game.state_manager.pop_state(2)
             # Keyboard events
@@ -1478,29 +1502,29 @@ class LevelCompleteState(GameState):
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option - 1) % (3 if self.level != LEVELS[-1] else 2)
+                        self.selected_option = (self.selected_option - 1) % (3 if has_next_level_option else 2)
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option + 1) % (3 if self.level != LEVELS[-1] else 2)
+                        self.selected_option = (self.selected_option + 1) % (3 if has_next_level_option else 2)
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
-                    if self.selected_option == 0 and self.level != LEVELS[-1]:
-                        game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level + 1))
-                    elif (self.selected_option == 1 and self.level != LEVELS[-1]) or (self.selected_option == 0 and self.level == LEVELS[-1]):
-                        game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level))
-                    elif (self.selected_option == 2 and self.level != LEVELS[-1]) or (self.selected_option == 1 and self.level == LEVELS[-1]):
+                    if self.selected_option == 0 and has_next_level_option:
+                        game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level + 1, self.file_path))
+                    elif (self.selected_option == 1 and has_next_level_option) or (self.selected_option == 0 and not has_next_level_option):
+                        game.state_manager.subst_below_switch_to(GameplayState(self.player, self.ai_algorithm, self.level, self.file_path))
+                    elif (self.selected_option == 2 and has_next_level_option) or (self.selected_option == 1 and not has_next_level_option):
                         game.state_manager.pop_state(2)
 
         # Update selected option based on mouse position
         # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
         mouse_pos = pygame.mouse.get_pos()
-        if self.level != LEVELS[-1] and self.next_level_rect is not None and self.next_level_rect.collidepoint(mouse_pos):
+        if has_next_level_option and self.next_level_rect is not None and self.next_level_rect.collidepoint(mouse_pos):
             self.selected_option = 0
         elif self.play_next_rect.collidepoint(mouse_pos):
-            self.selected_option = 1 if self.level != LEVELS[-1] else 0
+            self.selected_option = 1 if has_next_level_option else 0
         elif self.back_rect.collidepoint(mouse_pos):
-            self.selected_option = 2 if self.level != LEVELS[-1] else 1
+            self.selected_option = 2 if has_next_level_option else 1
         elif not self.keyboard_active:
             self.selected_option = None
 
@@ -1510,7 +1534,10 @@ class LevelCompleteState(GameState):
 
         level_complete_text = title_font.render('Level Complete', True, WHITE)
         score_text = text_font.render(f'Score: {self.score}', True, ORANGE)
-        if self.level != LEVELS[-1]:
+
+        _, _, has_next_level_option = self._get_level_flags()
+
+        if has_next_level_option:
             next_level_text = text_font.render('Next Level', True, ORANGE if self.selected_option == 0 else WHITE)
             play_next_text = text_font.render('Play Again', True, ORANGE if self.selected_option == 1 else WHITE)
             back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
@@ -1523,7 +1550,7 @@ class LevelCompleteState(GameState):
         score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2.5))
 
         # Interactable rectangles
-        if self.level != LEVELS[-1]:
+        if has_next_level_option:
             self.next_level_rect = next_level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.7))
         self.play_next_rect = play_next_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.5))
         self.back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.3))
@@ -1531,7 +1558,7 @@ class LevelCompleteState(GameState):
         game.screen.fill(BROWN)
         game.screen.blit(level_complete_text, level_complete_rect)
         game.screen.blit(score_text, score_rect)
-        if self.level != LEVELS[-1]:
+        if has_next_level_option:
             game.screen.blit(next_level_text, self.next_level_rect)
         game.screen.blit(play_next_text, self.play_next_rect)
         game.screen.blit(back_text, self.back_rect)
