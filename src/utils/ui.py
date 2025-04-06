@@ -12,6 +12,7 @@ def draw_board(screen, board):
     Args:
         screen (pygame.Surface): The screen to draw on
         board (List[List[int]]): The board to draw
+
     """
 
     wood_dark = pygame.image.load(DARK_WOOD_PATH)
@@ -39,7 +40,8 @@ def draw_piece(screen, piece, position, is_selected, offset_y=0):
         piece (List[Tuple[int, int]]): The piece to draw
         position (Tuple[int, int]): The position to draw the piece
         is_selected (bool): Whether the piece is selected
-        offset_y (int, optional): The vertical (y) offset to draw the piece. Defaults to 0.
+        offset_y (int, optional): The vertical (y) offset to draw the piece. Defaults to 0
+
     """
 
     wood = pygame.image.load(WOOD_PATH)
@@ -61,6 +63,7 @@ def draw_score(screen, score):
     Args:
         screen (pygame.Surface): The screen to draw on
         score (int): The score to draw
+
     """
 
     font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)

@@ -1,8 +1,8 @@
 import copy
 import json
 
-from game_logic.constants import (GRID_SIZE, INFINITE, LEVEL_BLOCKS,
-                                  LEVEL_BOARDS, CUSTOM)
+from game_logic.constants import (CUSTOM, GRID_SIZE, INFINITE, LEVEL_BLOCKS,
+                                  LEVEL_BOARDS)
 from game_logic.rules import generate_pieces
 
 

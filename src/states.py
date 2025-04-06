@@ -6,6 +6,8 @@ import time
 import pygame
 
 from AI.algorithm_registry import get_ai_algorithm
+# Extremely important to import the AI algorithms here, otherwise they won't be registered (even though they don't seem to be used.
+# This is because algorithm_registry abstracts them
 from AI.algorithms import (AIAlgorithm, AStarAlgorithm, BFSAlgorithm,
                            DFSAlgorithm, GreedySearchAlgorithm,
                            IterDeepAlgorithm, WeightedAStarAlgorithm)

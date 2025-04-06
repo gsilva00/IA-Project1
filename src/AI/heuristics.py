@@ -1,6 +1,7 @@
 import copy
 
-from game_logic.rules import (clear_full_lines, no_more_valid_moves, place_piece, is_valid_position)
+from game_logic.rules import clear_full_lines, no_more_valid_moves, place_piece
+
 
 # Heuristic for greedy best first search algorithm with the option to inherit the score from the parent node
 def greedy_heuristic(parent, current, total_blocks, inheritance):
@@ -14,6 +15,7 @@ def greedy_heuristic(parent, current, total_blocks, inheritance):
 
     Returns:
         float: The heuristic score for the current state.
+
     """
 
     score = 0
