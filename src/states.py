@@ -787,6 +787,7 @@ class SelectCustomState(GameState):
         for i, rect in enumerate(self.file_rects):
             if rect.collidepoint(mouse_pos):
                 self.selected_option = i
+                return  # Avoid falling into the back_rect condition (the elif, in this case)
         if self.back_rect.collidepoint(mouse_pos):
             self.selected_option = len(self.custom_files)
         elif not self.keyboard_active:

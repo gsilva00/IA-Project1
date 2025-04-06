@@ -16,7 +16,7 @@ class GameData:
         self.recent_piece = None
 
         if level == CUSTOM and file_path is not None:
-            self.load_game_state(file_path)
+            self.load_game_data(file_path)
 
 
     def get_more_playable_pieces(self):
@@ -80,43 +80,43 @@ class GameData:
         return set(frozenset(piece) if piece is not None else None for piece in pieces)
 
 
-    def save_game_state(self, file_path):
-        """Save the current state of the game to a file (JSON format). The state of the game is NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE. This is the data of the actual gameplay.
+    def save_game_data(self, file_path):
+        """Save the current data of the game to a file (JSON format).
 
         Args:
-            file_path (str): The path to the file where the game state will be saved.
+            file_path (str): The path to the file where the game data will be saved.
 
         """
 
-        game_state = {
+        game_data = {
             'board': self.board,
             'following_pieces': self.following_pieces,
             'pieces': self.pieces,
             'blocks_to_break': self.blocks_to_break
         }
         with open(file_path, 'w') as file:
-            json.dump(game_state, file)
+            json.dump(game_data, file)
 
-    def load_game_state(self, file_path):
-        """Load the game state from a file.
+    def load_game_data(self, file_path):
+        """Load the game data from a file.
 
         """
 
         with open(file_path, 'r') as file:
-            game_state = json.load(file)
+            game_data = json.load(file)
 
         # Use get() to avoid KeyError if the key is not present, using the default (already initialized) game_data values
         # Special case for following_pieces and pieces, due to the JSON format not preserving the tuple structure of each square in the piece
-        self.board = game_state.get('board', self.board)
+        self.board = game_data.get('board', self.board)
         self.following_pieces = [
             [
                 [tuple(square) for square in piece] if piece is not None else None
                 for piece in three_piece_group
             ]
-            for three_piece_group in game_state.get('following_pieces', self.following_pieces)
+            for three_piece_group in game_data.get('following_pieces', self.following_pieces)
         ]
         self.pieces = [
             [tuple(square) for square in piece] if piece is not None else None
-            for piece in game_state.get('pieces', self.pieces)
+            for piece in game_data.get('pieces', self.pieces)
         ]
-        self.blocks_to_break = game_state.get('blocks_to_break', self.blocks_to_break)
+        self.blocks_to_break = game_data.get('blocks_to_break', self.blocks_to_break)
