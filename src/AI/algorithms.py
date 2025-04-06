@@ -5,7 +5,7 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 
 from AI.algorithm_registry import AIAlgorithmRegistry
-from AI.heuristics import a_star_heuristic, greedy_heuristic
+from AI.heuristics import a_star_heuristic, a_star_heuristic_2, greedy_heuristic
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
                                   GREEDY, INFINITE, ITER_DEEP, WEIGHTED_A_STAR)
 from utils.ai import child_states, get_num_states, goal_state
@@ -399,7 +399,7 @@ class AStarAlgorithm(AIAlgorithm):
                         node,
                         node.path_cost + 1,
                         node.depth + 1,
-                        a_star_heuristic(child_state) + (node.path_cost + 1)
+                        a_star_heuristic_2(child_state) + (node.path_cost + 1)
                     )
                     node.add_child(child_node)
 
