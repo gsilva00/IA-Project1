@@ -30,7 +30,7 @@ class Game:
 
         """
 
-        self.state_manager.current_state.render(self)
+        self.state_manager.current_state.render(self.screen)
 
     def run(self):
         try:

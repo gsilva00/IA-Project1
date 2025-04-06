@@ -26,7 +26,7 @@ from game_logic.constants import (A_STAR, AI, AI_ALGO_NAMES, AI_FOUND, AI_NOT_FO
 from game_logic.rules import (clear_full_lines, is_valid_position,
                               no_more_valid_moves, place_piece)
 from utils.file import get_recent_files
-from utils.misc import QuitGameException, ScreenWrapper
+from utils.misc import QuitGameException
 from utils.ui import draw_board, draw_piece, draw_score
 
 
@@ -161,7 +161,7 @@ class GameState:
         """
         pass
 
-    def render(self, game):
+    def render(self, screen):
         """View that renders the game state
 
         Args:
@@ -196,7 +196,7 @@ class MainMenuState(GameState):
             elif event.type == pygame.MOUSEBUTTONDOWN or (event.type == pygame.KEYDOWN and event.key != pygame.K_ESCAPE):
                 game.state_manager.push_state(SelectPlayerState())
 
-    def render(self, game):
+    def render(self, screen):
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         icon_menu = pygame.image.load(GAME_ICON_MENU_PATH)
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
@@ -208,17 +208,17 @@ class MainMenuState(GameState):
         start_text = text_font.render('* Click Anywhere to Start *', True, WHITE)
 
         # Non-interactable rectangles
-        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
-        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
-        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        start_rect = start_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.35))
+        title_rect_back = title_text_back.get_rect(center=((screen.get_width() // 2) + 5 , (screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(screen.get_width() // 2, screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((screen.get_width() // 2) - 5 , (screen.get_height() // 4) + 5))
+        start_rect = start_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.35))
 
-        game.screen.blit(background, (0, 0))
-        game.screen.blit(icon_menu, (SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 100))
-        game.screen.blit(title_text_back, title_rect_back)
-        game.screen.blit(title_text_middle, title_rect_middle)
-        game.screen.blit(title_text_front, title_rect_front)
-        game.screen.blit(start_text, start_rect)
+        screen.blit(background, (0, 0))
+        screen.blit(icon_menu, (SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 100))
+        screen.blit(title_text_back, title_rect_back)
+        screen.blit(title_text_middle, title_rect_middle)
+        screen.blit(title_text_front, title_rect_front)
+        screen.blit(start_text, start_rect)
         pygame.display.flip()
 
     def exit(self, screen):
@@ -290,7 +290,7 @@ class SelectPlayerState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-    def render(self, game):
+    def render(self, screen):
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
         subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
@@ -305,24 +305,24 @@ class SelectPlayerState(GameState):
         back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
 
         # Non-interactable rectangles
-        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
-        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
-        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
+        title_rect_back = title_text_back.get_rect(center=((screen.get_width() // 2) + 5 , (screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(screen.get_width() // 2, screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((screen.get_width() // 2) - 5 , (screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(screen.get_width() // 2 , screen.get_height() // 2.65 ))
 
         # Interactable rectangles
-        self.player_rect = player_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
-        self.ai_rect = ai_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
-        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.20))
+        self.player_rect = player_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2.1))
+        self.ai_rect = ai_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.7))
+        self.back_rect = back_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.20))
 
-        game.screen.blit(background, (0, 0))
-        game.screen.blit(title_text_back, title_rect_back)
-        game.screen.blit(title_text_middle, title_rect_middle)
-        game.screen.blit(title_text_front, title_rect_front)
-        game.screen.blit(subtitle_text,subtitle_rect)
-        game.screen.blit(player_text, self.player_rect)
-        game.screen.blit(ai_text, self.ai_rect)
-        game.screen.blit(back_text, self.back_rect)
+        screen.blit(background, (0, 0))
+        screen.blit(title_text_back, title_rect_back)
+        screen.blit(title_text_middle, title_rect_middle)
+        screen.blit(title_text_front, title_rect_front)
+        screen.blit(subtitle_text,subtitle_rect)
+        screen.blit(player_text, self.player_rect)
+        screen.blit(ai_text, self.ai_rect)
+        screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
 
@@ -425,7 +425,7 @@ class SelectAIAlgorithmState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-    def render(self, game):
+    def render(self, screen):
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
         subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
@@ -444,32 +444,32 @@ class SelectAIAlgorithmState(GameState):
         back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 6 else WHITE)
 
         # Non-interactable rectangles
-        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
-        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
-        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
+        title_rect_back = title_text_back.get_rect(center=((screen.get_width() // 2) + 5 , (screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(screen.get_width() // 2, screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((screen.get_width() // 2) - 5 , (screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(screen.get_width() // 2 , screen.get_height() // 2.65 ))
 
         # Interactable rectangles
-        self.bfs_rect = bfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
-        self.dfs_rect = dfs_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.85))
-        self.iter_deep_rect = iter_deep_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.67))
-        self.greedy_rect = greedy_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.52))
-        self.a_star_rect = a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.4))
-        self.weighted_a_star_rect = weighted_a_star_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.3))
-        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.17))
+        self.bfs_rect = bfs_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2.1))
+        self.dfs_rect = dfs_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.85))
+        self.iter_deep_rect = iter_deep_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.67))
+        self.greedy_rect = greedy_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.52))
+        self.a_star_rect = a_star_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.4))
+        self.weighted_a_star_rect = weighted_a_star_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.3))
+        self.back_rect = back_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.17))
 
-        game.screen.blit(background, (0, 0))
-        game.screen.blit(title_text_back, title_rect_back)
-        game.screen.blit(title_text_middle, title_rect_middle)
-        game.screen.blit(title_text_front, title_rect_front)
-        game.screen.blit(subtitle_text,subtitle_rect)
-        game.screen.blit(bfs_text, self.bfs_rect)
-        game.screen.blit(dfs_text, self.dfs_rect)
-        game.screen.blit(iter_deep_text, self.iter_deep_rect)
-        game.screen.blit(greedy_text, self.greedy_rect)
-        game.screen.blit(a_star_text, self.a_star_rect)
-        game.screen.blit(weighted_a_star_text, self.weighted_a_star_rect)
-        game.screen.blit(back_text, self.back_rect)
+        screen.blit(background, (0, 0))
+        screen.blit(title_text_back, title_rect_back)
+        screen.blit(title_text_middle, title_rect_middle)
+        screen.blit(title_text_front, title_rect_front)
+        screen.blit(subtitle_text,subtitle_rect)
+        screen.blit(bfs_text, self.bfs_rect)
+        screen.blit(dfs_text, self.dfs_rect)
+        screen.blit(iter_deep_text, self.iter_deep_rect)
+        screen.blit(greedy_text, self.greedy_rect)
+        screen.blit(a_star_text, self.a_star_rect)
+        screen.blit(weighted_a_star_text, self.weighted_a_star_rect)
+        screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
     def exit(self, screen):
@@ -547,7 +547,7 @@ class SelectModeState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-    def render(self, game):
+    def render(self, screen):
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
         subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
@@ -562,24 +562,24 @@ class SelectModeState(GameState):
         back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 2 else WHITE)
 
         # Non-interactable rectangles
-        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
-        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
-        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65 ))
+        title_rect_back = title_text_back.get_rect(center=((screen.get_width() // 2) + 5 , (screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(screen.get_width() // 2, screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((screen.get_width() // 2) - 5 , (screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(screen.get_width() // 2 , screen.get_height() // 2.65 ))
 
         # Interactable rectangles
-        self.levels_rect = levels_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
-        self.infinite_rect = infinite_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.7))
-        self.quit_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.20))
+        self.levels_rect = levels_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2.1))
+        self.infinite_rect = infinite_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.7))
+        self.quit_rect = back_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.20))
 
-        game.screen.blit(background, (0, 0))
-        game.screen.blit(title_text_back, title_rect_back)
-        game.screen.blit(title_text_middle, title_rect_middle)
-        game.screen.blit(title_text_front, title_rect_front)
-        game.screen.blit(subtitle_text,subtitle_rect)
-        game.screen.blit(levels_text, self.levels_rect)
-        game.screen.blit(infinite_text, self.infinite_rect)
-        game.screen.blit(back_text, self.quit_rect)
+        screen.blit(background, (0, 0))
+        screen.blit(title_text_back, title_rect_back)
+        screen.blit(title_text_middle, title_rect_middle)
+        screen.blit(title_text_front, title_rect_front)
+        screen.blit(subtitle_text,subtitle_rect)
+        screen.blit(levels_text, self.levels_rect)
+        screen.blit(infinite_text, self.infinite_rect)
+        screen.blit(back_text, self.quit_rect)
         pygame.display.flip()
 
     def exit(self, screen):
@@ -668,7 +668,7 @@ class SelectLevelState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-    def render(self, game):
+    def render(self, screen):
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
         subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
@@ -685,28 +685,28 @@ class SelectLevelState(GameState):
         back_text = subtitle_font.render('Go Back', True, ORANGE if self.selected_option == 4 else WHITE)
 
         # Non-interactable rectangles
-        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
-        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
-        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2 , game.screen.get_height() // 2.65))
+        title_rect_back = title_text_back.get_rect(center=((screen.get_width() // 2) + 5 , (screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(screen.get_width() // 2, screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((screen.get_width() // 2) - 5 , (screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(screen.get_width() // 2 , screen.get_height() // 2.65))
 
         # Interactable rectangles
-        self.level_1_rect = level_1_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.05))
-        self.level_2_rect = level_2_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.8))
-        self.level_3_rect = level_3_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.6))
-        self.custom_rect = custom_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.4))
-        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.2))
+        self.level_1_rect = level_1_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2.05))
+        self.level_2_rect = level_2_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.8))
+        self.level_3_rect = level_3_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.6))
+        self.custom_rect = custom_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.4))
+        self.back_rect = back_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.2))
 
-        game.screen.blit(background, (0, 0))
-        game.screen.blit(title_text_back, title_rect_back)
-        game.screen.blit(title_text_middle, title_rect_middle)
-        game.screen.blit(title_text_front, title_rect_front)
-        game.screen.blit(subtitle_text,subtitle_rect)
-        game.screen.blit(level_1_text, self.level_1_rect)
-        game.screen.blit(level_2_text, self.level_2_rect)
-        game.screen.blit(level_3_text, self.level_3_rect)
-        game.screen.blit(custom_text, self.custom_rect)
-        game.screen.blit(back_text, self.back_rect)
+        screen.blit(background, (0, 0))
+        screen.blit(title_text_back, title_rect_back)
+        screen.blit(title_text_middle, title_rect_middle)
+        screen.blit(title_text_front, title_rect_front)
+        screen.blit(subtitle_text,subtitle_rect)
+        screen.blit(level_1_text, self.level_1_rect)
+        screen.blit(level_2_text, self.level_2_rect)
+        screen.blit(level_3_text, self.level_3_rect)
+        screen.blit(custom_text, self.custom_rect)
+        screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
     def exit(self, screen):
@@ -779,7 +779,7 @@ class SelectCustomState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-    def render(self, game):
+    def render(self, screen):
         background = pygame.image.load(BACKGROUND_MENU_PATH)
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
         subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
@@ -792,34 +792,34 @@ class SelectCustomState(GameState):
         back_text = text_font.render('Go Back', True, ORANGE if self.selected_option == len(self.custom_files) else WHITE)
 
         # Non-interactable rectangles
-        title_rect_back = title_text_back.get_rect(center=((game.screen.get_width() // 2) + 5 , (game.screen.get_height() // 4) - 5))
-        title_rect_middle = title_text_middle.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 4))
-        title_rect_front = title_text_front.get_rect(center=((game.screen.get_width() // 2) - 5 , (game.screen.get_height() // 4) + 5))
-        subtitle_rect = subtitle_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.65))
+        title_rect_back = title_text_back.get_rect(center=((screen.get_width() // 2) + 5 , (screen.get_height() // 4) - 5))
+        title_rect_middle = title_text_middle.get_rect(center=(screen.get_width() // 2, screen.get_height() // 4))
+        title_rect_front = title_text_front.get_rect(center=((screen.get_width() // 2) - 5 , (screen.get_height() // 4) + 5))
+        subtitle_rect = subtitle_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2.65))
 
         # Interactable rectangles
         # - File rects are included (in the loop below)
-        self.back_rect = back_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 1.2))
+        self.back_rect = back_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 1.2))
 
-        game.screen.blit(background, (0, 0))
-        game.screen.blit(title_text_back, title_rect_back)
-        game.screen.blit(title_text_middle, title_rect_middle)
-        game.screen.blit(title_text_front, title_rect_front)
-        game.screen.blit(subtitle_text, subtitle_rect)
+        screen.blit(background, (0, 0))
+        screen.blit(title_text_back, title_rect_back)
+        screen.blit(title_text_middle, title_rect_middle)
+        screen.blit(title_text_front, title_rect_front)
+        screen.blit(subtitle_text, subtitle_rect)
 
         self.file_rects = []
         if self.custom_files:
             for i, file in enumerate(self.custom_files):
                 file_text = text_font.render(file[:30] + '...' if len(file) > 30 else file, True, ORANGE if self.selected_option == i else WHITE)
-                file_rect = file_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1 + i * 50))
+                file_rect = file_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2.1 + i * 50))
                 self.file_rects.append(file_rect)
-                game.screen.blit(file_text, file_rect)
+                screen.blit(file_text, file_rect)
         else:
             no_files_text = text_font.render('No custom files found', True, WHITE)
-            no_files_rect = no_files_text.get_rect(center=(game.screen.get_width() // 2, game.screen.get_height() // 2.1))
-            game.screen.blit(no_files_text, no_files_rect)
+            no_files_rect = no_files_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2.1))
+            screen.blit(no_files_text, no_files_rect)
 
-        game.screen.blit(back_text, self.back_rect)
+        screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
     def exit(self, screen):
@@ -933,9 +933,8 @@ class GameplayState(GameState):
         self.ai_target_pos = None
 
         self.ai_algorithm.stop()
-        screen_wrapper = ScreenWrapper(game.screen)
         self.finished_game_message = message
-        self.render(screen_wrapper)
+        self.render(game.screen)
         time.sleep(2)
         game.state_manager.push_state(next_state)
 
@@ -1125,13 +1124,13 @@ class GameplayState(GameState):
             # Do nothing, the AI is still running
             pass
 
-    def render(self, game):
+    def render(self, screen):
         if self.player == HUMAN:
-            self.render_player(game)
+            self.render_player(screen)
         else:
-            self.render_ai(game)
+            self.render_ai(screen)
 
-    def render_player(self, game):
+    def render_player(self, screen):
         background = pygame.image.load(BACKGROUND_GAME_PATH)
         hint_icon = pygame.image.load(HINT_ICON_PATH).convert_alpha() # With transparency
         font = pygame.font.Font(FONT_PATH, FONT_HINT_SIZE)
@@ -1139,16 +1138,16 @@ class GameplayState(GameState):
         hint_text = font.render('H', True, WHITE)
         hint_icon = pygame.transform.scale(hint_icon, (60, 60)) # Resize the hint icon
 
-        game.screen.blit(background, (0, 0))
+        screen.blit(background, (0, 0))
 
         # Draw the hint piece
         if self.ai_hint_index is not None and self.ai_hint_position is not None and self.hint_pressed:
             game_data = copy.deepcopy(self.game_data)
             piece = self.game_data.pieces[self.ai_hint_index] if self.game_data.pieces[self.ai_hint_index] is not None else self.selected_piece
             place_piece(game_data, piece, self.ai_hint_position, True)
-            draw_board(game.screen, game_data.board)
+            draw_board(screen, game_data.board)
         else:
-            draw_board(game.screen, self.game_data.board)
+            draw_board(screen, self.game_data.board)
 
         mx, my = pygame.mouse.get_pos()
         px, py = mx // CELL_SIZE, (my // CELL_SIZE) - GRID_OFFSET_Y
@@ -1156,48 +1155,48 @@ class GameplayState(GameState):
         # Draw the list of pieces
         for i, piece in enumerate(self.game_data.pieces):
             if piece is not None:
-                draw_piece(game.screen, piece, (i*PIECES_LIST_BETWEEN_OFFSET_X_CELLS+PIECES_LIST_OFFSET_X_CELLS, PIECES_LIST_OFFSET_Y_CELLS), False)
+                draw_piece(screen, piece, (i*PIECES_LIST_BETWEEN_OFFSET_X_CELLS+PIECES_LIST_OFFSET_X_CELLS, PIECES_LIST_OFFSET_Y_CELLS), False)
 
         if self.selected_piece is not None:
-            draw_piece(game.screen, self.selected_piece, (px, py), True, GRID_OFFSET_Y)
+            draw_piece(screen, self.selected_piece, (px, py), True, GRID_OFFSET_Y)
 
         # Hint button
-        self.hint_button = pygame.draw.circle(game.screen, ORANGE, (SCREEN_WIDTH - 50, 50), 30)
-        game.screen.blit(hint_icon, self.hint_button.topleft)
-        game.screen.blit(hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
+        self.hint_button = pygame.draw.circle(screen, ORANGE, (SCREEN_WIDTH - 50, 50), 30)
+        screen.blit(hint_icon, self.hint_button.topleft)
+        screen.blit(hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
         if self.ai_hint_index is None or self.ai_hint_position is None:
             # If no hint is available, grey out the hint button
-            self.hint_button = pygame.draw.circle(game.screen, (128, 128, 128), (SCREEN_WIDTH - 50, 50), 30)
+            self.hint_button = pygame.draw.circle(screen, (128, 128, 128), (SCREEN_WIDTH - 50, 50), 30)
             greyed_hint_icon = hint_icon.copy()
             greyed_hint_icon.fill(GRAY, special_flags=pygame.BLEND_RGBA_MULT)
             greyed_hint_text = font.render('H', True, GRAY)
-            game.screen.blit(greyed_hint_icon, self.hint_button.topleft)
-            game.screen.blit(greyed_hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
+            screen.blit(greyed_hint_icon, self.hint_button.topleft)
+            screen.blit(greyed_hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
         elif self.hint_button.collidepoint(mx, my):
-            self.hint_button = pygame.draw.circle(game.screen, BROWN, (SCREEN_WIDTH - 50, 50), 30)
-            game.screen.blit(hint_icon, self.hint_button.topleft)
-            game.screen.blit(hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
+            self.hint_button = pygame.draw.circle(screen, BROWN, (SCREEN_WIDTH - 50, 50), 30)
+            screen.blit(hint_icon, self.hint_button.topleft)
+            screen.blit(hint_text, (self.hint_button.right - 18, self.hint_button.bottom - 18))
 
-        draw_score(game.screen, self.score)
+        draw_score(screen, self.score)
         pygame.display.flip()
 
-    def render_ai(self, game):
+    def render_ai(self, screen):
         background = pygame.image.load(BACKGROUND_GAME_PATH)
         text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
 
-        game.screen.blit(background, (0, 0))
+        screen.blit(background, (0, 0))
 
-        draw_board(game.screen, self.game_data.board)
+        draw_board(screen, self.game_data.board)
 
         # Draw the list of pieces
         for i, piece in enumerate(self.game_data.pieces):
             if piece is not None:
-                draw_piece(game.screen, piece, (i*PIECES_LIST_BETWEEN_OFFSET_X_CELLS+PIECES_LIST_OFFSET_X_CELLS, PIECES_LIST_OFFSET_Y_CELLS), False)
+                draw_piece(screen, piece, (i*PIECES_LIST_BETWEEN_OFFSET_X_CELLS+PIECES_LIST_OFFSET_X_CELLS, PIECES_LIST_OFFSET_Y_CELLS), False)
 
         if self.selected_piece is not None:
             if self.ai_current_pos != self.ai_target_pos:
                 px, py = self.ai_current_pos[0] / CELL_SIZE, self.ai_current_pos[1] / CELL_SIZE
-                draw_piece(game.screen, self.selected_piece, (px, py), True)
+                draw_piece(screen, self.selected_piece, (px, py), True)
 
                 cx, cy = self.ai_current_pos
                 tx, ty = self.ai_target_pos
@@ -1219,7 +1218,7 @@ class GameplayState(GameState):
 
                     self.ai_current_pos = (cx + step_x, cy + step_y)
 
-        draw_score(game.screen, self.score)
+        draw_score(screen, self.score)
 
         # The AI is running, show the time elapsed
         if self.ai_running_start_time is not None:
@@ -1233,9 +1232,9 @@ class GameplayState(GameState):
             overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             overlay.set_alpha(128)  # Set transparency level (0-255)
             overlay.fill((0, 0, 0))  # Black color
-            game.screen.blit(overlay, (0, 0))
-            game.screen.blit(algorithm_text, algorithm_time_rect)
-            game.screen.blit(elapsed_time_text, elapsed_time_rect)
+            screen.blit(overlay, (0, 0))
+            screen.blit(algorithm_text, algorithm_time_rect)
+            screen.blit(elapsed_time_text, elapsed_time_rect)
 
         if self.finished_game_message is not None:
             message_text = text_font.render(self.finished_game_message, True, WHITE)
@@ -1244,8 +1243,8 @@ class GameplayState(GameState):
             overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             overlay.set_alpha(64)  # Set transparency level (0-255)
             overlay.fill((0, 0, 0))  # Black color
-            game.screen.blit(overlay, (0, 0))
-            game.screen.blit(message_text, message_rect)
+            screen.blit(overlay, (0, 0))
+            screen.blit(message_text, message_rect)
 
         pygame.display.flip()
 
@@ -1323,7 +1322,7 @@ class PauseState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-    def render(self, game):
+    def render(self, screen):
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
         text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
 
@@ -1338,10 +1337,10 @@ class PauseState(GameState):
         self.resume_rect = resume_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2.5))
         self.exit_rect = exit_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
 
-        game.screen.fill(BROWN)
-        game.screen.blit(pause_text, pause_rect)
-        game.screen.blit(resume_text, self.resume_rect)
-        game.screen.blit(exit_text, self.exit_rect)
+        screen.fill(BROWN)
+        screen.blit(pause_text, pause_rect)
+        screen.blit(resume_text, self.resume_rect)
+        screen.blit(exit_text, self.exit_rect)
         pygame.display.flip()
 
     def exit(self, screen):
@@ -1413,7 +1412,7 @@ class GameOverState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-    def render(self, game):
+    def render(self, screen):
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
         subtitle_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SIZE)
         text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
@@ -1431,11 +1430,11 @@ class GameOverState(GameState):
         self.retry_level_rect = retry_level_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.7))
         self.back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.4))
 
-        game.screen.fill(BROWN)
-        game.screen.blit(game_over_text, game_over_rect)
-        game.screen.blit(score_text, score_rect)
-        game.screen.blit(retry_level_text, self.retry_level_rect)
-        game.screen.blit(back_text, self.back_rect)
+        screen.fill(BROWN)
+        screen.blit(game_over_text, game_over_rect)
+        screen.blit(score_text, score_rect)
+        screen.blit(retry_level_text, self.retry_level_rect)
+        screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
     def exit(self, screen):
@@ -1528,7 +1527,7 @@ class LevelCompleteState(GameState):
         elif not self.keyboard_active:
             self.selected_option = None
 
-    def render(self, game):
+    def render(self, screen):
         title_font = pygame.font.Font(FONT_PATH, FONT_TITLE_SIZE)
         text_font = pygame.font.Font(FONT_PATH, FONT_TEXT_SMALL_SIZE)
 
@@ -1555,13 +1554,13 @@ class LevelCompleteState(GameState):
         self.play_next_rect = play_next_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.5))
         self.back_rect = back_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 1.3))
 
-        game.screen.fill(BROWN)
-        game.screen.blit(level_complete_text, level_complete_rect)
-        game.screen.blit(score_text, score_rect)
+        screen.fill(BROWN)
+        screen.blit(level_complete_text, level_complete_rect)
+        screen.blit(score_text, score_rect)
         if has_next_level_option:
-            game.screen.blit(next_level_text, self.next_level_rect)
-        game.screen.blit(play_next_text, self.play_next_rect)
-        game.screen.blit(back_text, self.back_rect)
+            screen.blit(next_level_text, self.next_level_rect)
+        screen.blit(play_next_text, self.play_next_rect)
+        screen.blit(back_text, self.back_rect)
         pygame.display.flip()
 
     def exit(self, screen):
