@@ -2,13 +2,11 @@
 .vscode/
 .idea/
 
-# Ignore data files (until they are ready)
-data/
-
 # Ignore custom GameData JSON-representation files
 # - Keep the example file for reference
 custom/*
-!custom/example.json
+!custom/easy.json
+!custom/hard.json
 
 # Ignore Python cache
 __pycache__/

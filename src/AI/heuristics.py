@@ -105,53 +105,6 @@ def a_star_heuristic(current):
 
     return min(line_to_clear, column_to_clear)
 
-def a_star_heuristic_2(current):
-    """Admissible heuristic function for A* algorithm.
-    This heuristic estimates the cost to reach the goal state from the current state without overestimating it.
-    This heuristic is more complex than the previous one and considers the Manhattan distance to target blocks.
-
-    Args:
-        current (GameData): The current state of the game board.
-
-    Returns:
-        int: The heuristic score for the current state.
-
-    """
-
-    rows_with_targets = set()
-    cols_with_targets = set()
-    target_positions = []
-
-    # 1º) Iterate through the board once to identify rows, columns, and positions with target blocks
-    for row_idx, row in enumerate(current.board):
-        for col_idx, cell in enumerate(row):
-            if cell == 2:
-                rows_with_targets.add(row_idx)
-                cols_with_targets.add(col_idx)
-                target_positions.append((row_idx, col_idx))
-
-    # 2º) Calculate the number of rows and columns to clear
-    line_to_clear = len(rows_with_targets)
-    column_to_clear = len(cols_with_targets)
-
-    # 3º) Reward moves closer to target blocks by calculating the minimum Manhattan distance
-    min_distance = float('inf')
-    if current.recent_piece:  # Ensure there is a recent piece
-        piece, (px, py) = current.recent_piece  # Get the recent piece and its position
-        for x, y in piece:  # Iterate over the blocks of the recent piece
-            block_row = py + y
-            block_col = px + x
-            for target_row, target_col in target_positions:
-                distance = abs(block_row - target_row) + abs(block_col - target_col)
-                min_distance = min(min_distance, distance)
-
-    # If no target blocks exist, return 0 (goal state)
-    if not target_positions:
-        return 0
-
-    # Combine the number of lines/columns to clear with the distance penalty
-    return line_to_clear + column_to_clear + min_distance
-
 def infinite_heuristic(parent, current):
     """Heuristic function for the infinite game mode.
 

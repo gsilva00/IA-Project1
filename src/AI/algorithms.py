@@ -62,7 +62,10 @@ class TreeNode:
 
         """
 
-        return self.heuristic_score < other.heuristic_score
+        if self.heuristic_score == other.heuristic_score:
+            return self.path_cost < other.path_cost
+        else:
+            return self.heuristic_score < other.heuristic_score
 
 class AIAlgorithm:
     def __init__(self, level):
