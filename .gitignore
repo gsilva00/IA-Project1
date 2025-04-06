@@ -2,6 +2,9 @@
 .vscode/
 .idea/
 
+# Ignore data files
+data/
+
 # Ignore custom GameData JSON-representation files
 # - Keep the example file for reference
 custom/*

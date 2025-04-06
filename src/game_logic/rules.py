@@ -1,9 +1,9 @@
 import random
 
-from game_logic.constants import GRID_SIZE, PIECES
+from game_logic.constants import GRID_SIZE, INFINITE, PIECES
 
 
-def generate_pieces():
+def generate_pieces(level):
     """Generates list of lists with a total of 99 random pieces.
 
     Returns:
@@ -11,7 +11,7 @@ def generate_pieces():
 
     """
 
-    return [[random.choice(PIECES) for _ in range(3)] for _ in range(33)]
+    return [[random.choice(PIECES) for _ in range(3)] for _ in range(33 if level != INFINITE else 333)]
 
 def place_piece(game_data, piece, position, hint=False):
     """Places a piece on the board.

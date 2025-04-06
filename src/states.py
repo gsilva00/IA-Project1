@@ -851,7 +851,7 @@ class GameplayState(GameState):
         self.player = player
         self.ai_algorithm_id = ai_algorithm
         self.level = level
-        self.ai_algorithm = get_ai_algorithm(self.ai_algorithm_id, self.level) if player == HUMAN else get_ai_algorithm(SINGLE_DEPTH_GREEDY, self.level)
+        self.ai_algorithm = get_ai_algorithm(self.ai_algorithm_id, self.level) if level != INFINITE else get_ai_algorithm(SINGLE_DEPTH_GREEDY, self.level)
 
         self.file_path = file_path
         self.game_data = GameData(self.level, self.file_path)

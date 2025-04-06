@@ -48,7 +48,6 @@ class AIAlgorithmRegistry:
 
         """
 
-        print("Entering get_algorithm_id")
         print("Looking for algorithm:", algorithm)
         for identifier, alg in cls._registry.items():
             if isinstance(algorithm, alg):
@@ -68,7 +67,6 @@ def get_ai_algorithm(ai_algorithm, level):
 
     """
 
-    print("Entering get_ai_algorithm")
     print("Getting class for algorithm:", ai_algorithm)
 
     return AIAlgorithmRegistry.get_algorithm(ai_algorithm)(level)
