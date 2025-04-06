@@ -110,6 +110,14 @@ LEVEL_2 = 2
 LEVEL_3 = 3
 CUSTOM = 101
 
+LEVELS_NAMES = {
+    INFINITE: "Infinite",
+    LEVEL_1: "Level 1",
+    LEVEL_2: "Level 2",
+    LEVEL_3: "Level 3",
+    CUSTOM: "Custom"
+}
+
 LEVELS = [LEVEL_1, LEVEL_2, LEVEL_3]
 
 # For level 1:

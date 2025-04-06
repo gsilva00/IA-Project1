@@ -3,15 +3,16 @@ import time
 import tracemalloc
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 from AI.algorithm_registry import AIAlgorithmRegistry
 from AI.heuristics import (a_star_heuristic, a_star_heuristic_2,
                            greedy_heuristic)
 from game_logic.constants import (A_STAR, AI_FOUND, AI_NOT_FOUND, BFS, DFS,
-                                  GREEDY, INFINITE, ITER_DEEP, WEIGHTED_A_STAR)
+                                  GREEDY, INFINITE, ITER_DEEP, LEVELS_NAMES,
+                                  WEIGHTED_A_STAR)
 from utils.ai import child_states, get_num_states, goal_state
-from utils.file import stats_to_file
-
+from utils.file import moves_to_file, stats_to_file
 
 # For running AI algorithms in parallel
 executor = ThreadPoolExecutor(max_workers=1)
@@ -67,7 +68,9 @@ class AIAlgorithm:
         self.current_state = None
         self.next_state = None
 
-        self.goal_state_func = goal_state if level != INFINITE else None # TODO: Implement goal state function for infinite level (EXTRA FEATURE)
+        self.level = level
+
+        self.goal_state_func = goal_state if self.level != INFINITE else None # TODO: Implement goal state function for infinite level (EXTRA FEATURE)
         self.operators_func = child_states
         self.time_callback_func = None
         self.res_callback_func = None
@@ -196,15 +199,39 @@ class AIAlgorithm:
         peak_mem = sum(stat.size_diff for stat in stats)
 
         num_states = get_num_states()
+
         if result is not None:
             print(f"[{type(self).__name__}] Algorithm completed successfully.")
-
-            stats_to_file(f"{self.__class__.__name__}_stats.csv", elapsed_time, peak_mem, num_states, len(result))
         else:
             print(f"[{type(self).__name__}] Algorithm did not complete successfully. No valid moves found.")
 
+        # Time of storage (to match records between stats and moves)
+        irl_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        stats_to_file(
+            f"{self.__class__.__name__}_stats.csv",
+            irl_timestamp,
+            LEVELS_NAMES[self.level],
+            True if result else False,
+            elapsed_time,
+            peak_mem,
+            num_states,
+            len(result) if result else 0
+        )
+
+        if result is not None:
+            moves_to_file(
+                f"{self.__class__.__name__}_moves.csv",
+                irl_timestamp,
+                LEVELS_NAMES[self.level],
+                elapsed_time,
+                [(node.state.recent_piece[0], node.state.recent_piece[1]) for node in result]
+            )
+
+        print(f"[{type(self).__name__}] Level: {LEVELS_NAMES[self.level]}")
+        print(f"[{type(self).__name__}] Did the algorithm find a solution? {'Yes' if result else 'No'}")
         print(f"[{type(self).__name__}] Time: {elapsed_time:.4f}s")
-        print(f"[{type(self).__name__}] Memory: {peak_mem / (1024 * 1024):.4f} MB")
+        print(f"[{type(self).__name__}] Peak Memory Used: {peak_mem / (1024 * 1024):.4f} MB")
         print(f"[{type(self).__name__}] States: {num_states}")
         print(f"[{type(self).__name__}] Number of moves: {len(result)}")
         print(f"[{type(self).__name__}] Moves:")
@@ -290,14 +317,14 @@ class DFSAlgorithm(AIAlgorithm):
     It uses the iterative version of the algorithm, which is more efficient than the recursive version, especially for large search trees.
 
     Time Complexity:
-        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()>) == O(b^d * (p * g^4 + 1)) == O(b^d * p * g^4), where:
+        O(b^m * (<complexity of operators_func()> + <complexity of goal_state_func()>) == O(b^m * (p * g^4 + 1)) == O(b^m * p * g^4), where:
         - b is the branching factor
-        - d is the depth of the solution
+        - m is the maximum depth of the search tree
         - p is the number of currently playable pieces
         - g is the grid size
 
     Space Complexity:
-        O(b * d), where b is the branching factor and d is the depth of the solution.
+        O(b * m), where b is the branching factor and m is the maximum depth of the search tree.
 
     """
 
@@ -400,14 +427,15 @@ class GreedySearchAlgorithm(AIAlgorithm):
     It uses a heuristic function to evaluate the nodes and choose the best one to explore next.
 
     Time Complexity:
-        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()> + <complexity of greedy_heuristic()>) == O(b^d * (p * g^4 + 1 + p * g^2 * b)) == O(b^d * p * g^4), where:
+        O(b^m * (<complexity of operators_func()> + <complexity of goal_state_func()> + <complexity of greedy_heuristic()>) == O(b^m * (p * g^4 + 1 + p * g^2 * k)) == O(b^m * p * g^4), where:
         - b is the branching factor
-        - d is the depth of the solution
+        - m is the maximum depth of the search tree
         - p is the number of currently playable pieces
         - g is the grid size
+        - k is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces).
 
     Space Complexity:
-        O(b^d), where b is the branching factor and d is the depth of the solution.
+        O(b^m), where b is the branching factor and m is the depth of the solution.
 
     Note: Due to the heuristic function, the algorithm is way more efficient than the Big-O notation suggests, as it doesn't explore nearly as many nodes as the worst case scenario.
     Of course, this depends on the quality of the heuristic function, and in this case, it is very good.
