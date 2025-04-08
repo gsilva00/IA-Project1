@@ -153,13 +153,14 @@ class AIAlgorithm:
         """
 
         print(f"[{type(self).__name__}] Algorithm done.")
-        self.time_callback_func()
 
         self.result = future.result()
 
         if self.result is None:
             if self.res_callback_func is not None:
                 self.res_callback_func(AI_NOT_FOUND, None, None)
+            if self.time_callback_func is not None:
+                self.time_callback_func()
             return
 
         piece_index, piece_position = self._process_result()
@@ -170,6 +171,9 @@ class AIAlgorithm:
             self.res_callback_func(status, piece_index, piece_position)
         else:
             print(f"[{type(self).__name__}] No result callback function defined.")
+
+        if self.time_callback_func is not None:
+            self.time_callback_func()
 
     def _process_result(self):
         self.next_state = self.result[0].state
