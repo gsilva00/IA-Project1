@@ -1,61 +1,68 @@
+from __future__ import annotations
+
+import logging
 import sys
 
 import pygame
 
-from states import GameStateManager, MainMenuState
-from utils.misc import QuitGameException
+from woodblock.assets.assets import Assets
+from woodblock.states import GameStateManager, MainMenuState
+from woodblock.utils.misc import QuitGameException
+
+LOGGER = logging.getLogger(__name__)
 
 
 class Game:
-    """Main game class.
+    """Main game class."""
 
-    """
-
-    def __init__(self):
+    def __init__(self) -> None:
         self.screen = pygame.display.set_mode((800, 700))
         self.clock = pygame.time.Clock()
-        self.state_manager = GameStateManager(self.screen)
+        self.state_manager = GameStateManager()
         self.state_manager.switch_to_base_state(MainMenuState())
 
-    def update(self):
+        Assets.load()
+
+    def update(self) -> None:
         """Update the game state.
+
         This method handles the game state updates and events.
 
         Raises:
             QuitGameException: If the game is requested to quit.
 
         """
-
+        current_state = self.state_manager.current_state
         events = pygame.event.get()
-        self.state_manager.current_state.update(self, events)
+        if current_state is not None:
+            current_state.update(self, events)
 
-    def render(self):
-        """Render the game state.
+    def render(self) -> None:
+        """Render the game state."""
+        current_state = self.state_manager.current_state
+        if current_state is not None:
+            current_state.render(self.screen)
 
-        """
-
-        self.state_manager.current_state.render(self.screen)
-
-    def run(self):
+    def run(self) -> None:
         """Run the main game loop at 60 frames per second.
+
         Handles the game state updates and rendering.
         Handles quitting the game when a QuitGameException is raised.
         The game loop will also handle any exceptions that occur during the game.
 
         """
-
         try:
             while True:
                 self.update()
                 self.render()
                 self.clock.tick(60)
         except QuitGameException:
-            print("=== Quitting game... ===")
+            LOGGER.info("=== Quitting game... ===")
             self.state_manager.clear_states()
             pygame.quit()
             sys.exit()
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        except Exception:
+            LOGGER.exception("An error occurred.")
             self.state_manager.clear_states()
             pygame.quit()
             sys.exit()

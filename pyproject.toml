@@ -1,0 +1,74 @@
+[project]
+name = "woodblock"
+version = "1.0.0"
+authors = [
+    { name = "Gabriel Carvalho", email = "up202208939@up.pt" },
+    { name = "Guilherme Silva", email = "up202205298@up.pt" },
+    { name = "Valentina Cadime", email = "up202206262@up.pt" },
+]
+maintainers = [{ name = "Guilherme Silva", email = "up202205298@up.pt" }]
+description = "A woodblock game with AI playing mode"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pygame>=2.6.1"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.urls]
+Homepage = "https://github.com/gsilva00/IA-Project1"
+Repository = "https://github.com/gsilva00/IA-Project1"
+
+[project.scripts]
+woodblock = "woodblock.main:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+extend-exclude = [
+    ".git",
+    ".nox",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".venv",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# Enable import rules so Ruff replaces isort
+select = ["ALL"]
+
+ignore = [
+    "C90",     # mccabe
+    "COM812",  # missing-trailing-comma (avoid conflict with formatter)
+    "D203",    # incorrect-blank-line-before-class
+    "D213",    # multi-line-summary-second-line
+    "D100",    # undocumented-public-module
+    "D104",    # undocumented-public-package
+    "D107",    # undocumented-public-init
+    "E501",    # line-too-long
+    "EM101",   # raw-string-in-exception
+    "EM102",   # f-string-in-exception
+    "FA100",   # future-rewritable-type-annotation (runtime type annotations needed for woodblock)
+    "FIX002",  # line-contains-todo
+    "G004",    # logging-f-string
+    "PLR0913", # too-many-arguments
+    "S101",    # assert
+    "SIM105",  # suppressible-exception
+    "TD002",   # missing-todo-author
+    "TD003",   # missing-todo-link
+    "TRY003",  # raise-vanilla-args
+]
+
+mccabe.max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["ARG", "S101", "SLF001", "T20"]
+
+[tool.ruff.lint.flake8-annotations]
+# Suppress ANN401 for *args and **kwargs
+allow-star-arg-any = true

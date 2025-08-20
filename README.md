@@ -11,16 +11,18 @@
 
 1. Clone the repository
 2. Navigate to the project directory
-3. Install the required packages
+3. Install the required dependencies
 
 ```bash
-pip3 install pygame
+pip install uv
 ```
+
+> Or another installation method as per [UV's documentation](https://docs.astral.sh/uv/getting-started/installation/)
 
 4. Run the project
 
 ```bash
-python3 src/main.py
+uv run woodblock
 ```
 
 ## Navigation
