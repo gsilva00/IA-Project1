@@ -1,26 +1,57 @@
-import random
+from __future__ import annotations
 
-from game_logic.constants import GRID_SIZE, INFINITE, PIECES
+import logging
+import secrets
+from typing import TYPE_CHECKING
+
+from woodblock.game_logic.constants import (
+    PIECES,
+    Board,
+    BoardConfig,
+    Cell,
+    CellType,
+    Level,
+    Piece,
+    PieceHand,
+    PiecePosition,
+    PlayablePieceHand,
+)
+
+if TYPE_CHECKING:
+    from woodblock.game_data import GameData
+
+LOGGER = logging.getLogger(__name__)
 
 
-def generate_pieces(level):
-    """Generates list of lists with a total of 99 random pieces.
+def generate_pieces(level: Level) -> list[PieceHand]:
+    """Generate list of lists with a total of 99 random pieces.
 
     Returns:
-        List[List[int]]: List of 99 pieces (divided in lists of 3), each piece is a list of pairs (x, y), each pair represents a block in the piece.
+        list[PieceHand]: A list of lists containing the generated pieces:
+        - 99 pieces (divided in inner playable lists of 3) if level is not infinite
+        - 333 pieces (divided in inner playable lists of 3) if level is infinite
 
     """
+    return [
+        [secrets.choice(PIECES) for _ in range(3)]
+        for _ in range(33 if level != Level.INFINITE else 333)
+    ]
 
-    return [[random.choice(PIECES) for _ in range(3)] for _ in range(33 if level != INFINITE else 333)]
 
-def place_piece(game_data, piece, position, hint=False):
-    """Places a piece on the board.
+def place_piece(
+    game_data: GameData,
+    piece: Piece,
+    position: PiecePosition,
+    *,
+    is_hint: bool = False,
+) -> None:
+    """Places a piece on the BoardConfig.
 
     Args:
         game_data (GameData): The game data.
-        piece (List[Tuple[int, int]]): The piece to place.
+        piece (list[Tuple[int, int]]): The piece to place.
         position (Tuple[int, int]): The position to place the piece.
-        hint (bool): If True, place the piece as a hint (not permanent and different value to indicate hint and differentiate color).
+        is_hint (bool): If True, place the piece as a hint (not permanent and different value to indicate hint and differentiate color).
 
     Time Complexity:
         O(b), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces).
@@ -29,92 +60,77 @@ def place_piece(game_data, piece, position, hint=False):
         - The time complexity of this function is O(1) in practice, since the number of blocks in the piece is very small.
 
     """
-
     game_data.recent_piece = (piece, position)
 
     px, py = position
     for x, y in piece:
-        game_data.board[py + y][px + x] = 1 if not hint else 0.5
+        game_data.board[py + y][px + x] = (
+            Cell(CellType.PLAYER) if not is_hint else Cell(CellType.HINT)
+        )
 
-def clear_full_lines(board):
-    """Clears full lines and columns from the board.
+
+def clear_full_lines(board: Board) -> tuple[int, int]:
+    """Clear full lines and columns from the BoardConfig.
 
     Args:
-        board (List[List[int]]): The game board.
+        board (Board): The game BoardConfig.
 
     Returns:
-        Tuple[int, int]: The number of lines and columns cleared, and the number of target blocks cleared.
+        tuple[int, int]: The number of lines and columns cleared, and the number of target blocks cleared.
 
     Time Complexity:
         O(g^2), where g is the size of the grid
 
     """
-
     # Sets to avoid counting the same line/column/block multiple times
-    lines_to_clear = set()
-    columns_to_clear = set()
+    # Prepare lines and columns to clear
+    # Time Complexity: O(g^2) each
+    lines_to_clear = {
+        y for y in range(BoardConfig.ROW_SIZE) if all(cell.can_hit for cell in board[y])
+    }
+    columns_to_clear = {
+        x
+        for x in range(BoardConfig.COL_SIZE)
+        if all(board[y][x].can_hit for y in range(BoardConfig.ROW_SIZE))
+    }
     cleared_blocks = set()
-
     target_blocks_cleared = 0
 
-    # Prepare lines and columns to clear
-    # Time Complexity: O(g^2)
-    for y in range(GRID_SIZE):
-        if all(board[y]):
-            lines_to_clear.add(y)
+    def clear_block(x: int, y: int) -> None:
+        nonlocal target_blocks_cleared
+        block = board[y][x]
+        if block.type == CellType.TARGET and block.hits == 1:
+            target_blocks_cleared += 1
+        board[y][x] = block.hit()
 
-    # Time Complexity: O(g^2)
-    for x in range(GRID_SIZE):
-        if all(board[y][x] for y in range(GRID_SIZE)):
-            columns_to_clear.add(x)
-
-    # Clear lines
     # Time Complexity: O(n^2), where n is the number of lines to clear (n <= g)
     for y in lines_to_clear:
-        for x in range(GRID_SIZE):
-            if (y, x) not in cleared_blocks:
-                # Player block
-                if board[y][x] == 1:
-                    board[y][x] = 0
-                # Target block
-                elif board[y][x] == 2:
-                    # print("Target block cleared in line")
-                    target_blocks_cleared += 1
-                    board[y][x] = 0
-                # Target block with more than one hit left
-                elif board[y][x] > 2:
-                    board[y][x] = board[y][x] - 1
+        for x in range(BoardConfig.COL_SIZE):
+            if (x, y) not in cleared_blocks:
+                clear_block(x, y)
+                cleared_blocks.add((x, y))
 
-                cleared_blocks.add((y, x))
-
-    # Clear columns
     # Time Complexity: O(n^2), where n is the number of columns to clear (n <= g)
     for x in columns_to_clear:
-        for y in range(GRID_SIZE):
-            if (y, x) not in cleared_blocks:
-                # Player block
-                if board[y][x] == 1:
-                    board[y][x] = 0
-                # Target block
-                elif board[y][x] == 2:
-                    # print("Target block cleared in column")
-                    target_blocks_cleared += 1
-                    board[y][x] = 0
-                # Target block with more than one hit left
-                elif board[y][x] > 2:
-                    board[y][x] = board[y][x] - 1
-
-                cleared_blocks.add((y, x))
+        for y in range(BoardConfig.ROW_SIZE):
+            if (x, y) not in cleared_blocks:
+                clear_block(x, y)
+                cleared_blocks.add((x, y))
 
     return len(lines_to_clear) + len(columns_to_clear), target_blocks_cleared
 
-def is_valid_position(board, piece, position):
-    """Checks if a piece can be placed on the board at the given position.
+
+def is_valid_position(
+    board: Board,
+    piece: Piece,
+    position: PiecePosition,
+) -> bool:
+    """Check if a piece can be placed on the board at the given position.
 
     Args:
-        board (List[List[int]]): The game board.
-        piece (List[Tuple[int, int]]): The piece to place.
-        position (Tuple[int, int]): The position to place the piece.
+        board (Board): The game BoardConfig.
+        piece (Piece): The piece to place.
+        position (PiecePosition): The position to place the piece.
 
     Returns:
         bool: True if the piece can be placed, False otherwise
@@ -126,21 +142,21 @@ def is_valid_position(board, piece, position):
         The time complexity of this function is O(1) in practice, since the number of blocks in the piece is very small.
 
     """
-
     px, py = position
     for x, y in piece:
-        if not (0 <= px + x < GRID_SIZE and 0 <= py + y < GRID_SIZE):
+        if not (0 <= px + x < BoardConfig.COL_SIZE and 0 <= py + y < BoardConfig.ROW_SIZE):
             return False
-        if board[py + y][px + x]:
+        if board[py + y][px + x].can_hit:
             return False
     return True
 
-def no_more_valid_moves(board, pieces):
-    """Checks if there are no more valid moves for the player.
+
+def no_more_valid_moves(board: Board, pieces: PlayablePieceHand) -> bool:
+    """Check if there are no more valid moves for the player.
 
     Args:
-        board (List[List[int]]): The game board.
-        pieces (List[List[Tuple[int, int]]]): The list of possible pieces to place.
+        board (Board): The game BoardConfig.
+        pieces (PlayablePieceHand): The list of possible pieces to place.
 
     Returns:
         bool: True if there are no more valid moves, False otherwise.
@@ -152,11 +168,10 @@ def no_more_valid_moves(board, pieces):
         - b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces).
 
     """
-
     for piece in pieces:
         if piece is not None:
-            for y in range(GRID_SIZE):
-                for x in range(GRID_SIZE):
+            for y in range(BoardConfig.ROW_SIZE):
+                for x in range(BoardConfig.COL_SIZE):
                     if is_valid_position(board, piece, (x, y)):
                         return False
     return True
