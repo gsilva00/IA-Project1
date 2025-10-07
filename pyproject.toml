@@ -39,7 +39,6 @@ extend-exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable import rules so Ruff replaces isort
 select = ["ALL"]
 
 ignore = [
