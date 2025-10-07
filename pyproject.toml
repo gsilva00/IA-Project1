@@ -1,6 +1,6 @@
 [project]
 name = "woodblock"
-version = "1.0.0"
+version = "1.1.0"
 authors = [
     { name = "Gabriel Carvalho", email = "up202208939@up.pt" },
     { name = "Guilherme Silva", email = "up202205298@up.pt" },
