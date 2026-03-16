@@ -11,18 +11,12 @@
 
 1. Clone the repository
 2. Navigate to the project directory
-3. Install the required dependencies
+3. Run the project
+
+> `uv` will automatically install the required dependencies and run the project with the command below. See [`uv` documentation](https://docs.astral.sh/uv/getting-started/installation/) for more details.
 
 ```bash
-pip install uv
-```
-
-> Or another installation method as per [UV's documentation](https://docs.astral.sh/uv/getting-started/installation/)
-
-4. Run the project
-
-```bash
-uv run woodblock
+make run
 ```
 
 ## Navigation
@@ -39,7 +33,7 @@ There are multiple screens in our project so we decided to write this navigation
 >
 > **Level Select Screen:** In this screen you can choose the level you wish to select. Note that even though the board is the same for the same level, the pieces are randomly generated every time the level is replayed. In case you wish to compare algorithms, you will need to select custom levels where every information about the level is stored in the custom directory
 
-### Developed by:
+### Developed by
 
 1. Gabriel Carvalho - E-mail: up202208939@up.pt
 2. Guilherme Silva - E-mail: up202205298@up.pt
