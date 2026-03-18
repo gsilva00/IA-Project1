@@ -4,11 +4,12 @@ import logging
 import time
 import tracemalloc
 from collections import deque
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from queue import PriorityQueue
-from typing import Callable, TypeAlias
+from typing import TypeAlias
 
 from woodblock.ai.algorithm_registry import AIAlgorithmRegistry
 from woodblock.ai.heuristics import a_star_heuristic, greedy_heuristic, infinite_heuristic
@@ -39,7 +40,8 @@ executor = ThreadPoolExecutor(max_workers=1)
 
 
 class TreeNode:
-    """Represents a node in the search tree for AI algorithms.
+    """
+    Represents a node in the search tree for AI algorithms.
 
     Attributes:
         state (GameData): The state of the game (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE).
@@ -68,7 +70,8 @@ class TreeNode:
         self.heuristic_score = heuristic_score
 
     def add_child(self, child_node: TreeNode) -> None:
-        """Add a child node to the current node. Also set the parent of the child node to the current node.
+        """
+        Add a child node to the current node. Also set the parent of the child node to the current node.
 
         Args:
             child_node (TreeNode): The child node to add.
@@ -79,7 +82,8 @@ class TreeNode:
         child_node.parent = self
 
     def __lt__(self, other: TreeNode) -> bool:
-        """Define the less-than comparison for TreeNode objects.
+        """
+        Define the less-than comparison for TreeNode objects.
 
         This is used by the priority queue to compare nodes.
 
@@ -96,7 +100,8 @@ class TreeNode:
 
 
 class AIAlgorithm:
-    """Base class for AI algorithms used in the game.
+    """
+    Base class for AI algorithms used in the game.
 
     Attributes:
         level (Level): The difficulty level of the game (used to define the goal state).
@@ -132,7 +137,8 @@ class AIAlgorithm:
         LOGGER.debug(f"[AIAlgorithm] Initialized: {type(self).__name__}")
 
     def is_running(self) -> bool:
-        """Check if the AI algorithm is currently running.
+        """
+        Check if the AI algorithm is currently running.
 
         Returns:
             bool: True if the algorithm is running, False otherwise.
@@ -141,7 +147,8 @@ class AIAlgorithm:
         return not self.stop_flag and self.future is not None and self.future.running()
 
     def stop(self) -> None:
-        """Stop the AI algorithm execution.
+        """
+        Stop the AI algorithm execution.
 
         Resets everything related to the algorithm running in the background.
 
@@ -160,7 +167,8 @@ class AIAlgorithm:
         *,
         reset: bool = False,
     ) -> None:
-        """Start running the AI algorithm in the background (separate thread).
+        """
+        Start running the AI algorithm in the background (separate thread).
 
         - If a result has been computed, it will be used. No function calls will be made to the AI algorithm.
         - If it is already running, do nothing.
@@ -177,7 +185,8 @@ class AIAlgorithm:
             game_data (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE).
                 This is the data that the AI will use to make its decision while actually playing the game on the board.
             res_callback_func (function, optional): The function to call when the algorithm is done. Defaults to None.
-            time_callback_func (function, optional): The function to call when the algorithm starts and when it ends. Defaults to None.
+            time_callback_func (function, optional): The function to call when the algorithm starts and when it ends.
+                Defaults to None.
             reset (bool, optional): Whether to reset the stored algorithm results. Defaults to False.
 
         """
@@ -187,7 +196,7 @@ class AIAlgorithm:
         self.res_callback_func = res_callback_func
         self.time_callback_func = time_callback_func
 
-        # Reset the AI algorithm results (when current state of the game doesn't match state expected for result of the algorithm to be used)
+        # Reset the AI algorithm results (when game current state doesn't match state expected for result of algorithm to be used)
         if reset:
             self.next_state = None
             self.future = None
@@ -215,16 +224,13 @@ class AIAlgorithm:
         else:
             LOGGER.info(f"[{type(self).__name__}] Using stored result.")
             piece_index, piece_position = self._process_result()
-            status = (
-                AIReturn.FOUND
-                if piece_index is not None and piece_position is not None
-                else AIReturn.NOT_FOUND
-            )
+            status = AIReturn.FOUND if piece_index is not None and piece_position is not None else AIReturn.NOT_FOUND
             if self.res_callback_func is not None:
                 self.res_callback_func(status, piece_index, piece_position)
 
     def _on_algorithm_done(self, future: Future[list[TreeNode] | None]) -> None:
-        """Handle completion of the algorithm when it has finished running.
+        """
+        Handle completion of the algorithm when it has finished running.
 
         Calls the defined callback functions if they exists.
 
@@ -249,11 +255,7 @@ class AIAlgorithm:
             return
 
         piece_index, piece_position = self._process_result()
-        status = (
-            AIReturn.FOUND
-            if piece_index is not None and piece_position is not None
-            else AIReturn.NOT_FOUND
-        )
+        status = AIReturn.FOUND if piece_index is not None and piece_position is not None else AIReturn.NOT_FOUND
 
         if self.res_callback_func is not None:
             LOGGER.debug(f"[{type(self).__name__}] Calling result callback function...")
@@ -267,23 +269,23 @@ class AIAlgorithm:
 
     def _process_result(self) -> tuple[int | None, PiecePosition | None]:
         """Process the result of the algorithm to get the next piece index and position."""
-        # Always true, given the conditions on which this function is called
-        assert self.result is not None
+        if self.result is None:
+            raise ValueError("Result is unexpectedly None, cannot process result")
 
         self.next_state = self.result[0].state
         # Remove the state that is being played from the result (to avoid playing the same move again in the next call)
         self.result = self.result[1:] if len(self.result) > 1 else None
 
-        # Always true, given when this function is called
-        assert self.current_state is not None
-        assert self.next_state.recent_piece is not None
+        if self.current_state is None or self.next_state.recent_piece is None:
+            raise ValueError("Current state or next state recent piece is unexpectedly None, cannot process result")
         for i, piece in enumerate(self.current_state.pieces):
             if self.next_state.recent_piece[0] and self.next_state.recent_piece[0] == piece:
                 return i, self.next_state.recent_piece[1]
         return (None, None)
 
     def run_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:
-        """Run the AI algorithm and measure its performance (time, memory, states visited).
+        """
+        Run the AI algorithm and measure its performance (time, memory, states visited).
 
         Similar to a decorator, this function wraps the actual implementation of the algorithm
         and adds performance measurement.
@@ -355,7 +357,8 @@ class AIAlgorithm:
         return result
 
     def _execute_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:
-        """Run the actual AI algorithm.
+        """
+        Run the actual AI algorithm.
 
         Args:
             infinite (bool): Whether to run the algorithm in infinite mode.
@@ -367,7 +370,8 @@ class AIAlgorithm:
         raise NotImplementedError(f"{type(self).__name__} must override _execute_algorithm()")
 
     def order_nodes(self, node: TreeNode) -> list[TreeNode]:
-        """Sort nodes to trace the path from root to goal.
+        """
+        Sort nodes to trace the path from root to goal.
 
         Traverses from the goal state back to the root state. Reverses that order and returns the result.
 
@@ -392,7 +396,8 @@ class AIAlgorithm:
 
 
 class BFSAlgorithm(AIAlgorithm):
-    """Implements the Breadth-First Search algorithm (BFS) for the AI to find the next move to play.
+    """
+    Implements the Breadth-First Search algorithm (BFS) for the AI to find the next move to play.
 
     Time Complexity:
         O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()>) ==
@@ -409,10 +414,12 @@ class BFSAlgorithm(AIAlgorithm):
     """
 
     def _execute_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:  # noqa: ARG002
-        assert self.current_state is not None
-        # TODO: If this algorithm is running in infinite mode, we need to handle it differently
-        assert self.goal_state_func is not None
-        assert self.operators_func is not None
+        if self.current_state is None or self.goal_state_func is None or self.operators_func is None:
+            # TODO: If this algorithm is running in infinite mode, we need to handle it differently
+            # that is, goal_state_func and operators_func
+            raise ValueError(
+                "Current state, goal state function and operators function are unexpectedly None, cannot execute algorithm"
+            )
 
         root = TreeNode(self.current_state)
         queue = deque([root])
@@ -446,7 +453,8 @@ class BFSAlgorithm(AIAlgorithm):
 
 
 class DFSAlgorithm(AIAlgorithm):
-    """Implements the Depth-First Search algorithm (DFS) for the AI to find the next move to play.
+    """
+    Implements the Depth-First Search algorithm (DFS) for the AI to find the next move to play.
 
     It uses the iterative version of the algorithm,
     which is more efficient than the recursive version,
@@ -468,10 +476,12 @@ class DFSAlgorithm(AIAlgorithm):
     """
 
     def _execute_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:  # noqa: ARG002
-        assert self.current_state is not None
-        # TODO: If this algorithm is running in infinite mode, we need to handle it differently
-        assert self.goal_state_func is not None
-        assert self.operators_func is not None
+        if self.current_state is None or self.goal_state_func is None or self.operators_func is None:
+            # TODO: If this algorithm is running in infinite mode, we need to handle it differently
+            # that is, goal_state_func and operators_func
+            raise ValueError(
+                "Current state, goal state function and operators function are unexpectedly None, cannot execute algorithm"
+            )
 
         root = TreeNode(self.current_state)
         stack = [root]
@@ -506,7 +516,8 @@ class DFSAlgorithm(AIAlgorithm):
 
 
 class IterDeepAlgorithm(AIAlgorithm):
-    """Implements the Iterative Deepening Search algorithm (IDS) for the AI to find the next move to play.
+    """
+    Implements the Iterative Deepening Search algorithm (IDS) for the AI to find the next move to play.
 
     Since it uses DFS to visit the nodes, the code uses the iterative version of the DFS,
     which is more efficient than the recursive version,
@@ -533,15 +544,19 @@ class IterDeepAlgorithm(AIAlgorithm):
     """
 
     def _execute_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:  # noqa: ARG002
-        assert self.current_state is not None
-        # TODO: If this algorithm is running in infinite mode, we need to handle it differently
-        assert self.goal_state_func is not None
-        assert self.operators_func is not None
+        if self.current_state is None or self.goal_state_func is None or self.operators_func is None:
+            # TODO: If this algorithm is running in infinite mode, we need to handle it differently
+            # that is, goal_state_func and operators_func
+            raise ValueError(
+                "Current state, goal state function and operators function are unexpectedly None, cannot execute algorithm"
+            )
 
         def depth_limited_search(start_node: TreeNode, limit: int) -> list[TreeNode] | str | None:
             """Perform a depth-limited search."""
-            assert self.goal_state_func is not None
-            assert self.operators_func is not None
+            if self.goal_state_func is None or self.operators_func is None:
+                raise ValueError(
+                    "Goal state function and operators function are unexpectedly None, cannot perform depth-limited search"
+                )
 
             stack = [start_node]
             # Contains states, not nodes (to avoid duplicate states reached by different paths)
@@ -572,7 +587,9 @@ class IterDeepAlgorithm(AIAlgorithm):
                                 )
                                 node.add_child(child_node)
                                 stack.append(child_node)
-                                found_new_nodes = True  # We have added a node to the stack, which means that we could look forward into the graph (not the bottom of the stack)
+                                # We have added a node to the stack, which means that we could look forward into the graph
+                                # (not the bottom of the stack)
+                                found_new_nodes = True
 
             if found_new_nodes:
                 return "NOT YET EXHAUSTED"
@@ -591,15 +608,16 @@ class IterDeepAlgorithm(AIAlgorithm):
             if isinstance(result, str) and result == "NOT YET EXHAUSTED":
                 # When the stack was found empty since we reached the limiting depth and no further children nodes were added
                 depth_limit += 1
-            else:
+            elif isinstance(result, list):
                 # an answer was found before we reached empty stack
-                # can only be a list, but to satisfy mypy
-                assert isinstance(result, list)
                 return result
+            else:
+                raise ValueError(f"Unexpected result from depth-limited search: {result} of type {type(result)}")
 
 
 class GreedyAlgorithm(AIAlgorithm):
-    """Implements the Greedy Search algorithm for the AI to find the next move to play.
+    """
+    Implements the Greedy Search algorithm for the AI to find the next move to play.
 
     It uses a heuristic function to evaluate the nodes and choose the best one to explore next.
 
@@ -624,10 +642,12 @@ class GreedyAlgorithm(AIAlgorithm):
     """
 
     def _execute_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:  # noqa: ARG002
-        assert self.current_state is not None
-        # TODO: If this algorithm is running in infinite mode, we need to handle it differently
-        assert self.goal_state_func is not None
-        assert self.operators_func is not None
+        if self.current_state is None or self.goal_state_func is None or self.operators_func is None:
+            # TODO: If this algorithm is running in infinite mode, we need to handle it differently
+            # that is, goal_state_func and operators_func
+            raise ValueError(
+                "Current state, goal state function and operators function are unexpectedly None, cannot execute algorithm"
+            )
 
         root = TreeNode(self.current_state)
         pq: PriorityQueue[TreeNode] = PriorityQueue()
@@ -671,7 +691,10 @@ class GreedyAlgorithm(AIAlgorithm):
 
 
 class SingleDepthGreedyAlgorithm(AIAlgorithm):
-    """Implements the Single Depth Greedy Search algorithm for the AI to find the next move to play among only the first level of children nodes.
+    """
+    Implements the Single Depth Greedy Search algorithm for the AI to find the next move to play.
+
+    Among only the first level of children nodes.
 
     It uses a heuristic function to evaluate the nodes and choose the best one to explore next.
     It is a simplified version of the Greedy Search algorithm, which only explores the first level of children nodes.
@@ -691,10 +714,13 @@ class SingleDepthGreedyAlgorithm(AIAlgorithm):
     """
 
     def _execute_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:  # noqa: ARG002
-        assert self.current_state is not None
-        # TODO: If this algorithm is not running in infinite mode, we need to handle it differently
-        assert self.goal_state_func is None
-        assert self.operators_func is not None
+        # TODO: If this algorithm is running in infinite mode, we need to handle it differently
+        # that is, goal_state_func and operators_func
+        # ! Currently it is the one running infinite mode, so comment out for it to work
+        # if self.current_state is None or self.goal_state_func is None or self.operators_func is None:
+        #     raise ValueError(
+        #         "Current state, goal state function and operators function are unexpectedly None, cannot execute algorithm"
+        #     )
 
         root = TreeNode(self.current_state)
         best_node = None  # Track the best node based on the heuristic score
@@ -724,14 +750,16 @@ class SingleDepthGreedyAlgorithm(AIAlgorithm):
 
 
 class AStarAlgorithm(AIAlgorithm):
-    """Implements the A* Search algorithm for the AI to find the next move to play.
+    """
+    Implements the A* Search algorithm for the AI to find the next move to play.
 
-    It uses a heuristic function and the cost from the starting node to the current one to evaluate the nodes and choose the best one to explore next.
+    It uses a heuristic function and the cost from the starting node to the current one to evaluate the nodes
+    and choose the best one to explore next.
 
     Time Complexity:
-        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()> + <complexity of a_star_heuristic()>) ==
-        O(b^d * (p * g^4 + 1 + g^2)) ==
-        O(b^d * p * g^4),
+        O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()> + <complexity of a_star_heuristic()>)
+        == O(b^d * (p * g^4 + 1 + g^2))
+        == O(b^d * p * g^4),
         where:
         - b is the branching factor
         - d is the depth of the solution
@@ -746,16 +774,19 @@ class AStarAlgorithm(AIAlgorithm):
     However, unlike the Greedy Search algorithm, this algorithm is guaranteed to find the optimal solution,
     if the heuristic function is admissible - WHICH IT IS, in this case.
     The heuristic function is admissible if it never overestimates the cost to reach the goal state from the current state.
-    The quality of the heuristic function is very important for the performance of the algorithm, as it determines how many nodes are explored.
+    The quality of the heuristic function is very important for the performance of the algorithm,
+    as it determines how many nodes are explored.
     And the closer it is to the actual cost, the better the performance of the algorithm.
 
     """
 
     def _execute_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:  # noqa: ARG002
-        assert self.current_state is not None
-        # TODO: If this algorithm is running in infinite mode, we need to handle it differently
-        assert self.goal_state_func is not None
-        assert self.operators_func is not None
+        if self.current_state is None or self.goal_state_func is None or self.operators_func is None:
+            # TODO: If this algorithm is running in infinite mode, we need to handle it differently
+            # that is, goal_state_func and operators_func
+            raise ValueError(
+                "Current state, goal state function and operators function are unexpectedly None, cannot execute algorithm"
+            )
 
         root = TreeNode(self.current_state)
         pq: PriorityQueue[TreeNode] = PriorityQueue()
@@ -792,10 +823,13 @@ class AStarAlgorithm(AIAlgorithm):
 
 
 class WeightedAStarAlgorithm(AIAlgorithm):
-    """Implements the Weighted A* Search algorithm for the AI to find the next move to play.
+    """
+    Implements the Weighted A* Search algorithm for the AI to find the next move to play.
 
-    It uses a heuristic function and the cost from the starting node to the current one to evaluate the nodes and choose the best one to explore next.
-    The heuristic function is weighted to make the algorithm more aggressive in its search (higher weight == more aggressive search).
+    It uses a heuristic function and the cost from the starting node to the current one to evaluate the nodes
+    and choose the best one to explore next.
+    The heuristic function is weighted to make the algorithm more aggressive in its search
+    (higher weight == more aggressive search).
 
     Time Complexity:
         O(b^d * (<complexity of operators_func()> + <complexity of goal_state_func()> + <complexity of a_star_heuristic()>) ==
@@ -808,16 +842,22 @@ class WeightedAStarAlgorithm(AIAlgorithm):
     Space Complexity:
         O(b^d), where b is the branching factor and d is the depth of the solution.
 
-    Note: Due to the heuristic function, this algorithm is way more efficient than the Big-O notation suggests, as it doesn't explore nearly as many nodes as the worst case scenario, due to the heuristic function.
-    Due to the weighted heuristic function, this algorithm is more aggressive than the A* Search algorithm, which means that it will explore less nodes and find the solution faster, but it is not guaranteed to find the optimal solution, but it will find a satisfactory solution in a reasonable amount of time.
+    Note: Due to the heuristic function, this algorithm is way more efficient than the Big-O notation suggests,
+        as it doesn't explore nearly as many nodes as the worst case scenario, due to the heuristic function.
+        Due to the weighted heuristic function, this algorithm is more aggressive than the A* Search algorithm,
+        which means that it will explore less nodes and find the solution faster,
+        but it is not guaranteed to find the optimal solution,
+        but it will find a satisfactory solution in a reasonable amount of time.
 
     """
 
     def _execute_algorithm(self, *, infinite: bool = False) -> list[TreeNode] | None:  # noqa: ARG002
-        assert self.current_state is not None
-        # TODO: If this algorithm is running in infinite mode, we need to handle it differently
-        assert self.goal_state_func is not None
-        assert self.operators_func is not None
+        if self.current_state is None or self.goal_state_func is None or self.operators_func is None:
+            # TODO: If this algorithm is running in infinite mode, we need to handle it differently
+            # that is, goal_state_func and operators_func
+            raise ValueError(
+                "Current state, goal state function and operators function are unexpectedly None, cannot execute algorithm"
+            )
 
         root = TreeNode(self.current_state)
         pq: PriorityQueue[TreeNode] = PriorityQueue()
@@ -843,8 +883,7 @@ class WeightedAStarAlgorithm(AIAlgorithm):
                         parent=node,
                         path_cost=node.path_cost + 1,
                         depth=node.depth + 1,
-                        heuristic_score=a_star_heuristic(child_state) * weight
-                        + (node.path_cost + 1),
+                        heuristic_score=a_star_heuristic(child_state) * weight + (node.path_cost + 1),
                     )
                     node.add_child(child_node)
 

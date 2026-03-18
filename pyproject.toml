@@ -36,23 +36,21 @@ select = ["ALL"]
 ignore = [
     "C90",     # mccabe
     "COM812",  # missing-trailing-comma (avoid conflict with formatter)
-    "D203",    # incorrect-blank-line-before-class
-    "D213",    # multi-line-summary-second-line
     "D100",    # undocumented-public-module
     "D104",    # undocumented-public-package
     "D107",    # undocumented-public-init
-    "E501",    # line-too-long
+    "D203",    # incorrect-blank-line-before-class (prefer D211, which conflicts with this)
+    "D212",    # multi-line-summary-second-line (prefer D213, which conflicts with this)
     "EM101",   # raw-string-in-exception
     "EM102",   # f-string-in-exception
-    "FA100",   # future-rewritable-type-annotation (runtime type annotations needed for woodblock)
     "FIX002",  # line-contains-todo
     "G004",    # logging-f-string
     "PLR0913", # too-many-arguments
-    "S101",    # assert
-    "SIM105",  # suppressible-exception
+    "PLR2004", # magic-value-comparison
     "TD002",   # missing-todo-author
     "TD003",   # missing-todo-link
     "TRY003",  # raise-vanilla-args
+    "FBT003",  # boolean-positional-value-in-call (very useful concept, but pygame does not support it)
 ]
 
 [tool.ruff.lint.flake8-annotations]

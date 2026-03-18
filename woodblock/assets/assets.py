@@ -8,7 +8,8 @@ from woodblock.game_logic.constants import FontConfig, ImageConfig
 
 
 class Assets:
-    """Class to manage game assets such as images, fonts, and sounds.
+    """
+    Class to manage game assets such as images, fonts, and sounds.
 
     This class is responsible for loading and providing access to all game assets.
 

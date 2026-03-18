@@ -19,7 +19,8 @@ def greedy_heuristic(
     *,
     inheritance: bool,
 ) -> float:
-    """Greedy heuristic function for evaluating the state of the game board.
+    """
+    Greedy heuristic function for evaluating the state of the game board.
 
     Args:
         parent (TreeNode): The parent node of the current state.
@@ -40,7 +41,8 @@ def greedy_heuristic(
     """
     # Guaranteed, because current.recent_piece is set when a piece is placed
     # A piece is placed before the heuristic is called (inside child_states())
-    assert current.recent_piece is not None
+    if current.recent_piece is None:
+        raise ValueError("current.recent_piece is None, but it should not be.")
 
     # Higher score the better until normalization
     score = 0
@@ -50,12 +52,14 @@ def greedy_heuristic(
     # Place the piece temporarily to evaluate the board
     place_piece(temp_state, piece, (px, py))
 
-    # 1º) Reward clearing rows and columns
+    # 1º) Reward clearing rows and columns with target blocks
     _, target_blocks_cleared = clear_full_lines(temp_state.board)
     score += target_blocks_cleared * 20  # Increased weight for clearing lines
 
     # 2º) Reward proximity to clearing target blocks
-    # Time Complexity: O(b * 2*g), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces) and g is the grid size
+    # Time Complexity: O(b * 2*g), where:
+    # - b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces);
+    # - g is the grid size
     for x, y in piece:
         row = py + y
         col = px + x
@@ -63,19 +67,21 @@ def greedy_heuristic(
         score += sum(3 for row in parent.state.board if row[col].type == CellType.TARGET)  # Column
 
     # 3º) Reward normal block placement near others for future clears
-    # Time Complexity: O(b * 2*g), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces) and g is the grid size
+    # Time Complexity: O(b * 2*g), where
+    # - b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces)
+    # - g is the grid size
     for x, y in piece:
         row = py + y
         col = px + x
         score += sum(1 for cell in parent.state.board[row] if cell.type == CellType.PLAYER)  # Row
         score += sum(1 for row in parent.state.board if row[col].type == CellType.PLAYER)  # Column
 
-    # 4º) Focus on reducing target blocks to break
+    # 4º) Check if the play results in target_blocks <= 0, which means a winning move
     if current.blocks_to_break <= 0:
-        return float("-inf")  # Winning move
+        return float("-inf")
 
     # 5º) Penalize moves that lead to deadlocks
-    # Time Complexity: O(<complexity of no_more_valid_moves()>) == O(p * g^2 * b), where:
+    # Time Complexity: O(<complexity of no_more_valid_moves()>)
     if not any(current.pieces):
         if not any(current.following_pieces):
             return float("inf")  # No more moves available
@@ -95,8 +101,9 @@ def greedy_heuristic(
     return (10000 - score) / 10
 
 
-def a_star_heuristic(current: GameData) -> float:
-    """Admissible heuristic function for A* algorithm.
+def a_star_heuristic(current: GameData) -> int:
+    """
+    Admissible heuristic function for A* algorithm.
 
     This heuristic estimates the cost to reach the goal state from the current state without overestimating it.
     Overestimating the cost can lead to suboptimal decisions as per the A* algorithm heuristic admissibility criteria.
@@ -132,7 +139,8 @@ def a_star_heuristic(current: GameData) -> float:
 
 
 def infinite_heuristic(parent: TreeNode, current: GameData) -> float:
-    """Heuristic function for the infinite game mode.
+    """
+    Heuristic function for the infinite game mode.
 
     Args:
         parent (TreeNode): The parent node of the current state.
@@ -143,7 +151,10 @@ def infinite_heuristic(parent: TreeNode, current: GameData) -> float:
             The closer-to-zero/more negative the score, the better the state.
 
     """
-    assert current.recent_piece is not None
+    # Guaranteed, because current.recent_piece is set when a piece is placed
+    # A piece is placed before the heuristic is called (inside child_states())
+    if current.recent_piece is None:
+        raise ValueError("current.recent_piece is None, but it should not be.")
 
     # Higher score the better until normalization
     score = 0
@@ -196,17 +207,9 @@ def infinite_heuristic(parent: TreeNode, current: GameData) -> float:
         for r in range(rows):
             for c in range(cols):
                 if board[r][c].type == CellType.EMPTY:
-                    if (
-                        0 < c < cols - 1
-                        and board[r][c - 1].type != CellType.EMPTY
-                        and board[r][c + 1].type != CellType.EMPTY
-                    ):
+                    if 0 < c < cols - 1 and board[r][c - 1].type != CellType.EMPTY and board[r][c + 1].type != CellType.EMPTY:
                         count += 1
-                    if (
-                        0 < r < rows - 1
-                        and board[r - 1][c].type != CellType.EMPTY
-                        and board[r + 1][c].type != CellType.EMPTY
-                    ):
+                    if 0 < r < rows - 1 and board[r - 1][c].type != CellType.EMPTY and board[r + 1][c].type != CellType.EMPTY:
                         count += 1
         return count
 

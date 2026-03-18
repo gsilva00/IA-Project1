@@ -24,7 +24,8 @@ class Game:
         Assets.load()
 
     def update(self) -> None:
-        """Update the game state.
+        """
+        Update the game state.
 
         This method handles the game state updates and events.
 
@@ -44,7 +45,8 @@ class Game:
             current_state.render(self.screen)
 
     def run(self) -> None:
-        """Run the main game loop at 60 frames per second.
+        """
+        Run the main game loop at 60 frames per second.
 
         Handles the game state updates and rendering.
         Handles quitting the game when a QuitGameException is raised.

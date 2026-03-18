@@ -11,7 +11,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 class AIAlgorithmRegistry:
-    """Registry for AI algorithms.
+    """
+    Registry for AI algorithms.
 
     Follows the Registry Pattern.
     This class is used to register and retrieve AI algorithms.
@@ -27,7 +28,8 @@ class AIAlgorithmRegistry:
 
     @classmethod
     def get_algorithm(cls, identifier: AIAlgorithmID) -> type[AIAlgorithm]:
-        """Get an AI algorithm from the registry.
+        """
+        Get an AI algorithm from the registry.
 
         Args:
             identifier (AIAlgorithmID): The identifier of the AI algorithm.
@@ -45,7 +47,8 @@ class AIAlgorithmRegistry:
 
     @classmethod
     def get_algorithm_id(cls, algorithm: AIAlgorithm) -> AIAlgorithmID:
-        """Get the identifier of an AI algorithm from the registry.
+        """
+        Get the identifier of an AI algorithm from the registry.
 
         Args:
             algorithm (AIAlgorithm): The AI algorithm instance.
@@ -65,7 +68,8 @@ class AIAlgorithmRegistry:
 
 
 def get_ai_algorithm(ai_algorithm: AIAlgorithmID, level: Level) -> AIAlgorithm:
-    """Get the AI algorithm instance based on the identifier.
+    """
+    Get the AI algorithm instance based on the identifier.
 
     It fetches the AI algorithm class and instantiates it with the provided level.
 
@@ -85,7 +89,8 @@ def get_ai_algorithm(ai_algorithm: AIAlgorithmID, level: Level) -> AIAlgorithm:
 
 
 def get_ai_algorithm_id(ai_algorithm: AIAlgorithm) -> AIAlgorithmID:
-    """Get the identifier of an AI algorithm instance.
+    """
+    Get the identifier of an AI algorithm instance.
 
     Wrapper function to retrieve the identifier of an AI algorithm class,
     abstracting the implementation details of the storage of AI algorithms (in this case, the registry pattern).

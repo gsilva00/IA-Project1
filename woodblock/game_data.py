@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from woodblock.game_logic.constants import (
     LEVEL_BLOCKS,
@@ -43,14 +43,17 @@ class GameData:
             self.load_game_data(file_path)
 
     def get_more_playable_pieces(self) -> bool:
-        """Get more pieces to play from the already generated pieces.
+        """
+        Get more pieces to play from the already generated pieces.
 
         Returns:
             bool: True if there are more pieces to play, False otherwise.
 
         Time Complexity:
-            if there are no more pieces to play - O(1) since it will return immediately.
-            if there are more pieces to play - O(f + 3) == O(f), where f is the number of following_pieces elements (between 1 and 33) and 3 is the number of pieces to play.
+            if there are no more pieces to play: O(1), since it will return immediately.
+            if there are more pieces to play: O(f + 3) == O(f), where:
+            - f is the number of following_pieces elements (between 1 and 33)
+            - 3 is the number of pieces to play.
 
         """
         if not any(self.pieces):
@@ -85,9 +88,7 @@ class GameData:
                 frozenset(self._normalize_pieces(self.pieces)),
                 # Handle None in following_pieces and its elements
                 tuple(
-                    tuple(tuple(piece) if piece is not None else None for piece in group)
-                    if group is not None
-                    else None
+                    tuple(tuple(piece) if piece is not None else None for piece in group) if group is not None else None
                     for group in self.following_pieces
                 ),
                 # Integer is already hashable
@@ -99,7 +100,8 @@ class GameData:
 
     @staticmethod
     def _normalize_pieces(pieces: PlayablePieceHand) -> set[frozenset[Block] | None]:
-        """Convert pieces to a set of frozensets, ignoring None.
+        """
+        Convert pieces to a set of frozensets, ignoring None.
 
         Allows for easy comparison and hashing of pieces.
 
@@ -113,7 +115,8 @@ class GameData:
         return {frozenset(piece) if piece is not None else None for piece in pieces}
 
     def save_game_data(self, file_path: Path | None) -> None:
-        """Save the current data of the game to a file (JSON format).
+        """
+        Save the current data of the game to a file (JSON format).
 
         Args:
             file_path (Path): The path to the file where the game data will be saved.
@@ -132,7 +135,7 @@ class GameData:
         with file_path.open("w") as file:
             json.dump(game_data, file)
 
-    def load_board(self, game_data: dict) -> Board | None:
+    def load_board(self, game_data: dict[str, Any]) -> Board | None:
         """Load the board from the game data and validate its structure."""
         loaded_int_matrix: IntsBoard | None = game_data.get("board")
         if loaded_int_matrix is None:
@@ -154,13 +157,11 @@ class GameData:
             )
         return BoardUtils.from_int_matrix(loaded_int_matrix)
 
-    def load_following_pieces(self, game_data: dict) -> list[PieceHand] | None:
+    def load_following_pieces(self, game_data: dict[str, Any]) -> list[PieceHand] | None:
         """Load following pieces from the game data and validate their structure."""
         loaded_following_pieces: list[PieceHand] | None = game_data.get("following_pieces")
         if loaded_following_pieces is None:
-            LOGGER.error(
-                "Failed to load following_pieces. Please verify the custom game data format."
-            )
+            LOGGER.error("Failed to load following_pieces. Please verify the custom game data format.")
             return None
         rows = len(self.board)
         cols = len(self.board[0]) if rows > 0 else 0
@@ -178,11 +179,7 @@ class GameData:
                 [
                     (int(block[0]), int(block[1]))
                     for block in piece
-                    if (
-                        isinstance(block, (list, tuple))
-                        and len(block) == 2
-                        and all(isinstance(coord, int) for coord in block)
-                    )
+                    if (isinstance(block, (list, tuple)) and len(block) == 2 and all(isinstance(coord, int) for coord in block))
                 ]
                 if piece is not None
                 else []
@@ -191,7 +188,7 @@ class GameData:
             for piece_hand in loaded_following_pieces
         ]
 
-    def load_pieces(self, game_data: dict) -> PlayablePieceHand | None:
+    def load_pieces(self, game_data: dict[str, Any]) -> PlayablePieceHand | None:
         """Load pieces from the game data and validate their structure."""
         loaded_pieces: PieceHand | None = game_data.get("pieces")
         if loaded_pieces is None:
@@ -212,32 +209,23 @@ class GameData:
             [
                 (int(block[0]), int(block[1]))
                 for block in piece
-                if (
-                    isinstance(block, (list, tuple))
-                    and len(block) == 2
-                    and all(isinstance(coord, int) for coord in block)
-                )
+                if (isinstance(block, (list, tuple)) and len(block) == 2 and all(isinstance(coord, int) for coord in block))
             ]
             if piece is not None
             else None
             for piece in loaded_pieces
         ]
 
-    def load_blocks_to_break(self, game_data: dict) -> int | None:
+    def load_blocks_to_break(self, game_data: dict[str, Any]) -> int | None:
         """Load the number of blocks to break from the game data and validate its value."""
         loaded_blocks_to_break: int | None = game_data.get("blocks_to_break")
         if loaded_blocks_to_break is None:
-            LOGGER.error(
-                "Failed to load blocks_to_break. Please verify the custom game data format."
-            )
+            LOGGER.error("Failed to load blocks_to_break. Please verify the custom game data format.")
             return None
-        target_blocks_on_board = sum(
-            cell.type == CellType.TARGET for row in self.board for cell in row
-        )
+        target_blocks_on_board = sum(cell.type == CellType.TARGET for row in self.board for cell in row)
         if loaded_blocks_to_break > target_blocks_on_board:
             raise ValueError(
-                f"Loaded blocks to break ({loaded_blocks_to_break}) exceed target blocks on board "
-                f"({target_blocks_on_board})"
+                f"Loaded blocks to break ({loaded_blocks_to_break}) exceed target blocks on board ({target_blocks_on_board})"
             )
         return loaded_blocks_to_break
 

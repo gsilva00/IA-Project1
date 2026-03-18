@@ -20,7 +20,8 @@ def stats_to_file(
     *,
     finished: bool,
 ) -> None:
-    """Store statistics to a CSV file.
+    """
+    Store statistics to a CSV file.
 
     Args:
         filename (Path): The name of the file to write to.
@@ -76,7 +77,8 @@ def moves_to_file(
     num_moves: int,
     moves: list[tuple[Piece, PiecePosition]],
 ) -> None:
-    """Write the moves to a CSV file with all moves in a single line.
+    """
+    Write the moves to a CSV file with all moves in a single line.
 
     Args:
         filename (Path): The name of the file to write to.
@@ -105,7 +107,8 @@ def moves_to_file(
 
 
 def get_recent_files(folder: Path, count: int) -> list[Path]:
-    """Get the most recent files from a folder.
+    """
+    Get the most recent files from a folder.
 
     Args:
         folder (Path): The folder to search for files.

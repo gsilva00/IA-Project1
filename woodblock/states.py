@@ -11,18 +11,21 @@ import pygame
 
 from woodblock.ai.algorithm_registry import get_ai_algorithm
 
-# Extremely important to import the AI algorithms here, otherwise they won't be registered (even though they don't seem to be used.
+# Extremely important to import the AI algorithms here, otherwise they won't be registered
 # This is because algorithm_registry abstracts them
+# ruff: disable[F401]
 from woodblock.ai.algorithms import (
-    AIAlgorithm,  # noqa: F401
-    AStarAlgorithm,  # noqa: F401
-    BFSAlgorithm,  # noqa: F401
-    DFSAlgorithm,  # noqa: F401
-    GreedyAlgorithm,  # noqa: F401
-    IterDeepAlgorithm,  # noqa: F401
-    SingleDepthGreedyAlgorithm,  # noqa: F401
-    WeightedAStarAlgorithm,  # noqa: F401
+    AIAlgorithm,
+    AStarAlgorithm,
+    BFSAlgorithm,
+    DFSAlgorithm,
+    GreedyAlgorithm,
+    IterDeepAlgorithm,
+    SingleDepthGreedyAlgorithm,
+    WeightedAStarAlgorithm,
 )
+
+# ruff: enable[F401]
 from woodblock.assets.assets import Assets
 from woodblock.game_data import GameData
 from woodblock.game_logic.constants import (
@@ -62,7 +65,8 @@ T = TypeVar("T", bound="GameState")
 
 
 class GameStateManager:
-    """Manages the game states' stack.
+    """
+    Manages the game states' stack.
 
     Attributes:
         state_stack (list[GameState]): The stack of game states
@@ -73,7 +77,8 @@ class GameStateManager:
         self.state_stack: list[GameState] = []
 
     def safe_enter(self, *, raise_error: bool = False) -> bool:
-        """Enter the current state safely. Handling when it cannot be entered (is None).
+        """
+        Enter the current state safely. Handling when it cannot be entered (is None).
 
         Args:
             raise_error (bool): Whether to raise an error if the state cannot be entered
@@ -91,7 +96,8 @@ class GameStateManager:
         return False
 
     def safe_exit(self, *, raise_error: bool = False) -> bool:
-        """Exit the current state safely. Handling when it cannot be exited (is None).
+        """
+        Exit the current state safely. Handling when it cannot be exited (is None).
 
         Args:
             raise_error (bool): Whether to raise an error if the state cannot be exited
@@ -109,7 +115,8 @@ class GameStateManager:
         return False
 
     def has_states(self) -> bool:
-        """Check if there are any states in the stack.
+        """
+        Check if there are any states in the stack.
 
         Returns:
             bool: True if there are states in the stack, False otherwise
@@ -118,7 +125,8 @@ class GameStateManager:
         return bool(self.state_stack)
 
     def switch_to_base_state(self, new_state: GameState) -> None:
-        """Switch to a new state and remove all previous states.
+        """
+        Switch to a new state and remove all previous states.
 
         Args:
             new_state (GameState): The new state to switch to
@@ -129,7 +137,8 @@ class GameStateManager:
         self.safe_enter()
 
     def push_state(self, new_state: GameState, *, exit_current: bool = True) -> None:
-        """Push a new state to the stack.
+        """
+        Push a new state to the stack.
 
         Args:
             new_state (GameState): The new state to push
@@ -142,7 +151,8 @@ class GameStateManager:
         self.safe_enter()
 
     def pop_state(self, times: int = 1, *, enter_current: bool = True) -> bool:
-        """Pop the current state.
+        """
+        Pop the current state.
 
         Args:
             times (int): The number of times to pop the state
@@ -167,7 +177,8 @@ class GameStateManager:
         return popped
 
     def subst_below_switch_to(self, new_state: GameState) -> bool:
-        """Remove the current state and substitute the one below it with a new state.
+        """
+        Remove the current state and substitute the one below it with a new state.
 
         Args:
             new_state (GameState): The new state to switch to
@@ -183,7 +194,8 @@ class GameStateManager:
         return False
 
     def _pop_until_with_offset(self, state: type[T], additional_pops: int) -> T:
-        """Pop until target state, then pop additional times (helper method).
+        """
+        Pop until target state, then pop additional times (helper method).
 
         Args:
             state (Type[T]): The target state to find
@@ -212,7 +224,8 @@ class GameStateManager:
         return self.current_state
 
     def pop_until(self, state: type[T]) -> T:
-        """Pop states until the target state is reached.
+        """
+        Pop states until the target state is reached.
 
         Args:
             state (Type[T]): The target state to pop until
@@ -228,7 +241,8 @@ class GameStateManager:
         return self._pop_until_with_offset(state, 0)
 
     def pop_beyond(self, state: type[T], times: int) -> T:
-        """Pop states beyond the target state.
+        """
+        Pop states beyond the target state.
 
         Args:
             state (Type[T]): The target state to find first.
@@ -250,7 +264,8 @@ class GameStateManager:
 
     @property
     def current_state(self) -> GameState | None:
-        """Get the current state.
+        """
+        Get the current state.
 
         Returns:
             GameState | None: The current state, or None if there are no states in the stack
@@ -266,7 +281,8 @@ class GameState(ABC):
 
     @abstractmethod
     def enter(self) -> None:
-        """Call when the game state is entered.
+        """
+        Call when the game state is entered.
 
         Used for debugging, possible transition effects and other initializations separate from the constructor
 
@@ -274,7 +290,8 @@ class GameState(ABC):
 
     @abstractmethod
     def update(self, game: Game, events: list[pygame.event.Event]) -> None:
-        """Update the game state.
+        """
+        Update the game state.
 
         Args:
             game (Game): The Game object
@@ -287,7 +304,8 @@ class GameState(ABC):
 
     @abstractmethod
     def render(self, screen: pygame.Surface) -> None:
-        """View that renders the game state.
+        """
+        View that renders the game state.
 
         Args:
             screen (pygame.Surface): The screen to render on
@@ -296,7 +314,8 @@ class GameState(ABC):
 
     @abstractmethod
     def exit(self) -> None:
-        """Call when the game state is exited.
+        """
+        Call when the game state is exited.
 
         Used for debugging, possible transition effects and other clean-up operations.
 
@@ -317,13 +336,9 @@ class MainMenuState(GameState):
             raise ValueError("Unexpected divergence in game state stack")
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and (event.key in {pygame.K_ESCAPE, pygame.K_q})
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and (event.key in {pygame.K_ESCAPE, pygame.K_q})):
                 raise QuitGameException
-            if event.type == pygame.MOUSEBUTTONDOWN or (
-                event.type == pygame.KEYDOWN and event.key != pygame.K_ESCAPE
-            ):
+            if event.type == pygame.MOUSEBUTTONDOWN or (event.type == pygame.KEYDOWN and event.key != pygame.K_ESCAPE):
                 game.state_manager.push_state(SelectPlayerState())
 
     def render(self, screen: pygame.Surface) -> None:  # noqa: D102
@@ -351,9 +366,7 @@ class MainMenuState(GameState):
         )
 
         screen.blit(Assets.backgrounds["menu"], (0, 0))
-        screen.blit(
-            Assets.icons["menu_game"], (ScreenConfig.WIDTH / 2 - 100, ScreenConfig.HEIGHT / 2 - 100)
-        )
+        screen.blit(Assets.icons["menu_game"], (ScreenConfig.WIDTH / 2 - 100, ScreenConfig.HEIGHT / 2 - 100))
         screen.blit(title_text_back, title_rect_back)
         screen.blit(title_text_middle, title_rect_middle)
         screen.blit(title_text_front, title_rect_front)
@@ -379,18 +392,15 @@ class SelectPlayerState(GameState):
         self.keyboard_active = False
         self.selected_option = None
 
-    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
-        assert self.player_rect is not None
-        assert self.ai_rect is not None
-        assert self.back_rect is not None
+    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912
+        if self.player_rect is None and self.ai_rect is None and self.back_rect is None:
+            raise ValueError("Unexpected uninitialized rectangles in SelectPlayerState")
 
         if not game.state_manager.has_states():
             raise ValueError("Unexpected divergence in game state stack")
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException
             # Mouse click events
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -529,22 +539,23 @@ class SelectAIAlgorithmState(GameState):
         self.keyboard_active = False
         self.selected_option = None
 
-    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
-        assert self.bfs_rect is not None
-        assert self.dfs_rect is not None
-        assert self.iter_deep_rect is not None
-        assert self.greedy_rect is not None
-        assert self.a_star_rect is not None
-        assert self.weighted_a_star_rect is not None
-        assert self.back_rect is not None
+    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912, PLR0915
+        if (
+            self.bfs_rect is None
+            or self.dfs_rect is None
+            or self.iter_deep_rect is None
+            or self.greedy_rect is None
+            or self.a_star_rect is None
+            or self.weighted_a_star_rect is None
+            or self.back_rect is None
+        ):
+            raise ValueError("Unexpected uninitialized rectangles in SelectAIAlgorithmState")
 
         if not game.state_manager.has_states():
             raise ValueError("Unexpected divergence in game state stack")
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException
             # Mouse click events
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -760,18 +771,15 @@ class SelectModeState(GameState):
         self.keyboard_active = False
         self.selected_option = None
 
-    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
-        assert self.levels_rect is not None
-        assert self.infinite_rect is not None
-        assert self.quit_rect is not None
+    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912
+        if self.levels_rect is None or self.infinite_rect is None or self.quit_rect is None:
+            raise ValueError("Unexpected uninitialized rectangles in SelectModeState")
 
         if not game.state_manager.has_states():
             raise ValueError("Unexpected divergence in game state stack")
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException
             # Mouse click events
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -927,20 +935,21 @@ class SelectLevelState(GameState):
         self.keyboard_active = False
         self.selected_option = None
 
-    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
-        assert self.level_1_rect is not None
-        assert self.level_2_rect is not None
-        assert self.level_3_rect is not None
-        assert self.custom_rect is not None
-        assert self.back_rect is not None
+    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912, PLR0915
+        if (
+            self.level_1_rect is None
+            or self.level_2_rect is None
+            or self.level_3_rect is None
+            or self.custom_rect is None
+            or self.back_rect is None
+        ):
+            raise ValueError("Unexpected uninitialized rectangles in SelectLevelState")
 
         if not game.state_manager.has_states():
             raise ValueError("Unexpected divergence in game state stack")
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException
             # Mouse click events
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -1121,16 +1130,15 @@ class SelectCustomState(GameState):
         self.selected_option = None
         self.custom_files = get_recent_files(PathConfig.CUSTOM, 4)
 
-    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
-        assert self.back_rect is not None
+    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912
+        if self.back_rect is None:
+            raise ValueError("Unexpected uninitialized back rectangle in SelectCustomState")
 
         if not game.state_manager.has_states():
             raise ValueError("Unexpected divergence in game state stack")
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException
             # Mouse click events
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -1164,16 +1172,12 @@ class SelectCustomState(GameState):
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option - 1) % (
-                            len(self.custom_files) + 1
-                        )
+                        self.selected_option = (self.selected_option - 1) % (len(self.custom_files) + 1)
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option + 1) % (
-                            len(self.custom_files) + 1
-                        )
+                        self.selected_option = (self.selected_option + 1) % (len(self.custom_files) + 1)
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option is None:
                         pass
@@ -1219,9 +1223,7 @@ class SelectCustomState(GameState):
         back_text = Assets.fonts["text"].render(
             "Go Back",
             True,
-            ColorConfig.ORANGE
-            if self.selected_option == len(self.custom_files)
-            else ColorConfig.WHITE,
+            ColorConfig.ORANGE if self.selected_option == len(self.custom_files) else ColorConfig.WHITE,
         )
 
         # Non-interactable rectangles
@@ -1293,9 +1295,7 @@ class GameplayState(GameState):
     ) -> None:
         self.player = player
         # TODO: Currently algorithm for Infinite level is set to SINGLE_DEPTH_GREEDY, consider adding more options
-        self.ai_algorithm_id = (
-            ai_algorithm if level != Level.INFINITE else AIAlgorithmID.SINGLE_DEPTH_GREEDY
-        )
+        self.ai_algorithm_id = ai_algorithm if level != Level.INFINITE else AIAlgorithmID.SINGLE_DEPTH_GREEDY
         self.ai_algorithm = (
             get_ai_algorithm(self.ai_algorithm_id, level)
             if level != Level.INFINITE
@@ -1338,7 +1338,8 @@ class GameplayState(GameState):
         piece_index: int | None,
         piece_position: PiecePosition | None,
     ) -> None:
-        """Notify or update state when AI algorithm has finished.
+        """
+        Notify or update state when AI algorithm has finished.
 
         Args:
             status (AIReturn): Status of the AI algorithm (AI_FOUND or AI_NOT_FOUND)
@@ -1364,8 +1365,7 @@ class GameplayState(GameState):
                     if piece == self.selected_piece:
                         # Convert from board (cell-based) coordinates to screen-based coordinates
                         self.ai_initial_pos = (
-                            (i * PieceListOffset.BETWEEN_X_CELLS + PieceListOffset.X_CELLS)
-                            * BoardConfig.CELL_SIZE,
+                            (i * PieceListOffset.BETWEEN_X_CELLS + PieceListOffset.X_CELLS) * BoardConfig.CELL_SIZE,
                             PieceListOffset.Y_CELLS * BoardConfig.CELL_SIZE,
                         )
                         self.ai_current_pos = self.ai_initial_pos
@@ -1381,7 +1381,8 @@ class GameplayState(GameState):
             LOGGER.debug("AI stopped early")
 
     def _finish_game(self, game: Game, next_state: GameState, message: str) -> None:
-        """Handle the completion of the game state.
+        """
+        Handle the completion of the game state.
 
         Clean the gameplay-related variables for the last render() call.
         This last call displays the end state and message.
@@ -1406,13 +1407,10 @@ class GameplayState(GameState):
     def enter(self) -> None:  # noqa: D102
         LOGGER.debug("Starting Gameplay")
 
-        # Start running the AI algorithm AS SOON AS WE ENTER THE GAMEPLAY STATE (but avoid recomputing if there are results already)
-        if (
-            self.player == PlayerType.HUMAN
-            and (not self.ai_hint_index or not self.ai_hint_position)
-        ) or (
-            self.player == PlayerType.AI
-            and (not self.ai_initial_pos or not self.ai_current_pos or not self.ai_target_pos)
+        # Start running the AI algorithm AS SOON AS WE ENTER THE GAMEPLAY STATE
+        # (but avoid recomputing if there are results already)
+        if (self.player == PlayerType.HUMAN and (not self.ai_hint_index or not self.ai_hint_position)) or (
+            self.player == PlayerType.AI and (not self.ai_initial_pos or not self.ai_current_pos or not self.ai_target_pos)
         ):
             self.ai_algorithm.get_next_move(
                 game_data=self.game_data,
@@ -1429,11 +1427,9 @@ class GameplayState(GameState):
         else:
             self.update_ai(game, events)
 
-    def update_player(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
+    def update_player(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912, PLR0915
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 self.ai_algorithm.stop()
                 raise QuitGameException
             # Keyboard events
@@ -1442,11 +1438,7 @@ class GameplayState(GameState):
                     # Stop the AI algorithm running in the background (if it is)
                     game.state_manager.push_state(PauseState())
 
-                if (
-                    event.key == pygame.K_h
-                    and self.ai_hint_index is not None
-                    and self.ai_hint_position is not None
-                ):
+                if event.key == pygame.K_h and self.ai_hint_index is not None and self.ai_hint_position is not None:
                     # Callback function will handle assigning the AI's move to the corresponding variables
                     # Check how those variables are used in the events above
                     self.hint_pressed = True
@@ -1465,28 +1457,17 @@ class GameplayState(GameState):
                                 i * PieceListOffset.BETWEEN_X_CELLS + PieceListOffset.X_CELLS
                             ) * BoardConfig.CELL_SIZE
                             piece_y_start = PieceListOffset.Y_CELLS * BoardConfig.CELL_SIZE
-                            piece_x_end = (
-                                piece_x_start + (max_x - min_x + 1) * BoardConfig.CELL_SIZE
-                            )
-                            piece_y_end = (
-                                piece_y_start + (max_y - min_y + 1) * BoardConfig.CELL_SIZE
-                            )
+                            piece_x_end = piece_x_start + (max_x - min_x + 1) * BoardConfig.CELL_SIZE
+                            piece_y_end = piece_y_start + (max_y - min_y + 1) * BoardConfig.CELL_SIZE
 
-                            if (
-                                piece_x_start <= mx <= piece_x_end
-                                and piece_y_start <= my <= piece_y_end
-                            ):
+                            if piece_x_start <= mx <= piece_x_end and piece_y_start <= my <= piece_y_end:
                                 self.selected_index = i
                                 self.selected_piece = piece
                                 self.game_data.pieces[i] = None
                                 break
 
                     # Mouse wasn't on any piece (still not selected), check if hint button was pressed with the mouse
-                    if (
-                        self.selected_piece is None
-                        and self.hint_button is not None
-                        and self.hint_button.collidepoint(mx, my)
-                    ):
+                    if self.selected_piece is None and self.hint_button is not None and self.hint_button.collidepoint(mx, my):
                         self.hint_pressed = True
 
                 else:
@@ -1524,7 +1505,11 @@ class GameplayState(GameState):
                                         self.level,
                                         self.file_path,
                                     ),
-                                    message=f"{'Custom Level completed!' if self.level == Level.CUSTOM else f'Level {self.level} completed!'}",
+                                    message=(
+                                        "Custom Level completed!"
+                                        if self.level == Level.CUSTOM
+                                        else f"Level {self.level} completed!"
+                                    ),
                                 )
                                 return
 
@@ -1618,9 +1603,7 @@ class GameplayState(GameState):
 
     def update_ai(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 self.ai_algorithm.stop()
                 raise QuitGameException
 
@@ -1645,11 +1628,7 @@ class GameplayState(GameState):
             )
             return
 
-        if (
-            self.ai_current_pos is not None
-            and self.ai_target_pos is not None
-            and self.ai_current_pos == self.ai_target_pos
-        ):
+        if self.ai_current_pos is not None and self.ai_target_pos is not None and self.ai_current_pos == self.ai_target_pos:
             # AI move animation complete, place the piece
             px = round((self.ai_target_pos[0] - BoardConfig.GRID_OFFSET_X) // BoardConfig.CELL_SIZE)
             py = round((self.ai_target_pos[1] // BoardConfig.CELL_SIZE) - BoardConfig.GRID_OFFSET_Y)
@@ -1672,7 +1651,7 @@ class GameplayState(GameState):
                             self.level,
                             self.file_path,
                         ),
-                        message=f"{'Custom Level completed!' if self.level == Level.CUSTOM else f'Level {self.level} completed!'}",
+                        message="Custom Level completed!" if self.level == Level.CUSTOM else f"Level {self.level} completed!",
                     )
                     return
 
@@ -1713,9 +1692,7 @@ class GameplayState(GameState):
             True,
             ColorConfig.WHITE,
         )
-        message_rect = message_text.get_rect(
-            center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2)
-        )
+        message_rect = message_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2))
 
         overlay = pygame.Surface((ScreenConfig.WIDTH, ScreenConfig.HEIGHT))
         overlay.set_alpha(64)  # Set transparency level (0-255)
@@ -1736,18 +1713,16 @@ class GameplayState(GameState):
         screen.blit(Assets.backgrounds["game"], (0, 0))
 
         # Draw the hint piece
-        if (
-            self.hint_pressed
-            and self.ai_hint_index is not None
-            and self.ai_hint_position is not None
-        ):
+        if self.hint_pressed and self.ai_hint_index is not None and self.ai_hint_position is not None:
             game_data = copy.deepcopy(self.game_data)
             piece = (
                 self.game_data.pieces[self.ai_hint_index]
                 if self.game_data.pieces[self.ai_hint_index] is not None
                 else self.selected_piece
             )
-            assert piece is not None
+            if piece is None:
+                raise ValueError("Unexpectedly missing piece for AI hint")
+
             place_piece(
                 game_data=game_data,
                 piece=piece,
@@ -1941,20 +1916,19 @@ class PauseState(GameState):
         self.keyboard_active = False
         self.selected_option = None
 
-    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
-        assert self.resume_rect is not None
-        assert self.exit_rect is not None
+    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912
+        if self.resume_rect is None or self.exit_rect is None:
+            raise ValueError("PauseState not properly initialized with resume and exit rectangles")
 
         if not game.state_manager.has_states():
             raise ValueError("Unexpected divergence in game state stack")
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 # Get the GameplayState and stop the AI algorithm
                 gameplay_state = game.state_manager.pop_until(GameplayState)
-                assert gameplay_state is not None
+                if gameplay_state is None:
+                    raise ValueError("GameplayState not found in state stack")
                 gameplay_state.ai_algorithm.stop()
                 raise QuitGameException
             # Mouse click events
@@ -2028,12 +2002,8 @@ class PauseState(GameState):
         pause_rect = pause_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 4))
 
         # Interactable rectangles
-        self.resume_rect = resume_text.get_rect(
-            center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2.5)
-        )
-        self.exit_rect = exit_text.get_rect(
-            center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2)
-        )
+        self.resume_rect = resume_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2.5))
+        self.exit_rect = exit_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2))
 
         screen.fill(ColorConfig.BROWN)
         screen.blit(pause_text, pause_rect)
@@ -2072,19 +2042,18 @@ class GameOverState(GameState):
         self.keyboard_active = False
         self.selected_option = None
 
-    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
+    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912
         if not game.state_manager.has_states():
             raise ValueError("Unexpected divergence in game state stack")
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException
             # Mouse click events
             if event.type == pygame.MOUSEBUTTONDOWN:
-                assert self.retry_level_rect is not None
-                assert self.back_rect is not None
+                if self.retry_level_rect is None and self.back_rect is None:
+                    # TODO: Why does this check needs to be in here and not at the top of the function
+                    raise ValueError("GameOverState not properly initialized with retry_level and back rectangles")
 
                 if self.retry_level_rect.collidepoint(event.pos):
                     game.state_manager.subst_below_switch_to(
@@ -2130,8 +2099,9 @@ class GameOverState(GameState):
                     elif self.selected_option == 1:
                         game.state_manager.pop_beyond(GameplayState, 1)
 
-        assert self.retry_level_rect is not None
-        assert self.back_rect is not None
+        if self.retry_level_rect is None and self.back_rect is None:
+            # TODO: Why does this check needs to be in here and not at the top of the function
+            raise ValueError("GameOverState not properly initialized with retry_level and back rectangles")
         # Update selected option based on mouse position
         # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
         mouse_pos = pygame.mouse.get_pos()
@@ -2161,20 +2131,14 @@ class GameOverState(GameState):
         )
 
         # Non-interactable rectangles
-        game_over_rect = game_over_text.get_rect(
-            center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 4)
-        )
-        score_rect = score_text.get_rect(
-            center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2.5)
-        )
+        game_over_rect = game_over_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 4))
+        score_rect = score_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2.5))
 
         # Interactable rectangles
         self.retry_level_rect = retry_level_text.get_rect(
             center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 1.7),
         )
-        self.back_rect = back_text.get_rect(
-            center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 1.4)
-        )
+        self.back_rect = back_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 1.4))
 
         screen.fill(ColorConfig.BROWN)
         screen.blit(game_over_text, game_over_rect)
@@ -2211,7 +2175,8 @@ class LevelCompleteState(GameState):
         self.back_rect: pygame.Rect | None = None
 
     def _get_level_flags(self) -> tuple[bool, bool, bool]:
-        """Return boolean flags used in update() and render().
+        """
+        Return boolean flags used in update() and render().
 
         Returns:
         - is_last_level: True if the level is the last one
@@ -2229,22 +2194,20 @@ class LevelCompleteState(GameState):
         self.keyboard_active = False
         self.selected_option = None
 
-    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102
+    def update(self, game: Game, events: list[pygame.event.Event]) -> None:  # noqa: D102, PLR0912, PLR0915
         if not game.state_manager.has_states():
             raise ValueError("Unexpected divergence in game state stack")
 
         _, _, has_next_level_option = self._get_level_flags()
 
         for event in events:
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_q
-            ):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 raise QuitGameException
             # Mouse click events
             if event.type == pygame.MOUSEBUTTONDOWN:
-                assert self.play_next_rect is not None
-                assert self.next_level_rect is not None
-                assert self.back_rect is not None
+                if self.play_next_rect is None and self.next_level_rect is None and self.back_rect is None:
+                    # TODO: Why does this check needs to be in here and not at the top of the function
+                    raise ValueError("LevelCompleteState not properly initialized with next_level, play_next and back rectangles")
 
                 if has_next_level_option and self.next_level_rect.collidepoint(event.pos):
                     try:
@@ -2287,16 +2250,12 @@ class LevelCompleteState(GameState):
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option - 1) % (
-                            3 if has_next_level_option else 2
-                        )
+                        self.selected_option = (self.selected_option - 1) % (3 if has_next_level_option else 2)
                 elif event.key in [pygame.K_DOWN, pygame.K_s]:
                     if self.selected_option is None:
                         self.selected_option = 0
                     else:
-                        self.selected_option = (self.selected_option + 1) % (
-                            3 if has_next_level_option else 2
-                        )
+                        self.selected_option = (self.selected_option + 1) % (3 if has_next_level_option else 2)
                 elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
                     if self.selected_option == 0 and has_next_level_option:
                         try:
@@ -2332,20 +2291,19 @@ class LevelCompleteState(GameState):
                         game.state_manager.pop_beyond(GameplayState, 1)
 
         if has_next_level_option:
-            assert self.next_level_rect is not None
-        else:
-            assert self.next_level_rect is None
-        assert self.play_next_rect is not None
-        assert self.back_rect is not None
+            # TODO: Why does this check needs to be in here and not at the top of the function
+            if self.next_level_rect is None:
+                raise ValueError("LevelCompleteState not properly initialized with next_level rectangle")
+        elif self.next_level_rect is not None:
+            raise ValueError("LevelCompleteState should not have next_level rectangle when there is no next level option")
+
+        if self.play_next_rect is None or self.back_rect is None:
+            # TODO: Why does this check needs to be in here and not at the top of the function
+            raise ValueError("LevelCompleteState not properly initialized with play_next and back rectangles")
         # Update selected option based on mouse position
         # Must be after the keyboard events to avoid overriding the selected option (mouse has priority)
         mouse_pos = pygame.mouse.get_pos()
-        if (
-            has_next_level_option
-            and self.next_level_rect is not None
-            and self.next_level_rect.collidepoint(mouse_pos)
-        ):
-            # not None check to satisfy mypy even though conditional assert guarantees it
+        if has_next_level_option and self.next_level_rect.collidepoint(mouse_pos):
             self.selected_option = 0
         elif self.play_next_rect.collidepoint(mouse_pos):
             self.selected_option = 1 if has_next_level_option else 0
@@ -2400,9 +2358,7 @@ class LevelCompleteState(GameState):
         level_complete_rect = level_complete_text.get_rect(
             center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 4),
         )
-        score_rect = score_text.get_rect(
-            center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2.5)
-        )
+        score_rect = score_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 2.5))
 
         # Interactable rectangles
         if has_next_level_option:
@@ -2412,9 +2368,7 @@ class LevelCompleteState(GameState):
         self.play_next_rect = play_next_text.get_rect(
             center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 1.5),
         )
-        self.back_rect = back_text.get_rect(
-            center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 1.3)
-        )
+        self.back_rect = back_text.get_rect(center=(ScreenConfig.WIDTH // 2, ScreenConfig.HEIGHT // 1.3))
 
         screen.fill(ColorConfig.BROWN)
         screen.blit(level_complete_text, level_complete_rect)

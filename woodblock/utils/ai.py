@@ -32,14 +32,20 @@ class StateCounter:
 
 
 def child_states(game_state: GameData) -> list[GameData]:
-    """Generate all possible child states from the current state of the game being played.
+    """
+    Generate all possible child states from the current state of the game being played.
 
     Args:
-        game_state (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE). This is the data that the AI will use to make its decision while actually playing the game on the board.
+        game_state (GameData): The current game state (NOT TO BE CONFUSED WITH THE STATES FROM THE STATE MACHINE).
+            This is the data that the AI will use to make its decision while actually playing the game on the board.
 
     Time Complexity:
         If there are no pieces to play, the time complexity is O(<get_more_playable_pieces()> + <child_states()>).
-        O(p * g^2 * (<complexity of is_valid_position()> + <complexity of place_piece()> + <complexity of clear_full_lines()>)) == O(p * g^2 * (b + b + g^2)) == O(p * g^2 * (2*b + g^2)) == O(p * g^2 * g^2) == O(p * g^4), where:
+        O(p * g^2 * (<complexity of is_valid_position()> + <complexity of place_piece()> + <complexity of clear_full_lines()>))
+        == O(p * g^2 * (b + b + g^2))
+        == O(p * g^2 * (2*b + g^2))
+        == O(p * g^2 * g^2)
+        == O(p * g^4), where:
         - p is the number of currently playable pieces
         - g is the grid size
 
@@ -71,7 +77,8 @@ def child_states(game_state: GameData) -> list[GameData]:
 
 
 def goal_state(game_state: GameData) -> bool:
-    """Check if the current game state is a goal state (no more blocks to break).
+    """
+    Check if the current game state is a goal state (no more blocks to break).
 
     Args:
         game_state (GameData): The current game state

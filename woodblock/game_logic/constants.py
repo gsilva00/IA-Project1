@@ -132,7 +132,8 @@ class CellType(IntEnum):
 
 
 class Cell:
-    """Cell class to represent a cell in the game BoardConfig.
+    """
+    Cell class to represent a cell in the game BoardConfig.
 
     Attributes:
         type (CellType): The type of the cell.
@@ -165,7 +166,8 @@ class Cell:
         return hash((self.type, self.hits, self.can_hit))
 
     def empty(self) -> Cell:
-        """Empty the cell.
+        """
+        Empty the cell.
 
         New instance created to maintain immutability of Cell.
         Not needed if Cell is not used in dicts or sets, but kept for consistency.
@@ -177,7 +179,8 @@ class Cell:
         return Cell(CellType.EMPTY)
 
     def hit(self) -> Cell:
-        """Apply a hit to the cell.
+        """
+        Apply a hit to the cell.
 
         New instance created to maintain immutability of Cell.
         Not needed if Cell is not used in dicts or sets, but kept for consistency.
@@ -254,6 +257,7 @@ LEVELS = [Level.LEVEL_1, Level.LEVEL_2, Level.LEVEL_3]
 
 
 # fmt: off
+# ruff: disable[E501]
 # Level boards and blocks
 T = TypeVar("T")
 Matrix2D: TypeAlias = list[list[T]]
@@ -295,6 +299,7 @@ LEVEL_BOARD_TYPES: dict[Level, TypesBoard] = {
         [CellType.EMPTY, CellType.TARGET, CellType.EMPTY, CellType.EMPTY, CellType.EMPTY, CellType.EMPTY, CellType.TARGET, CellType.EMPTY],
     ],
 }
+# ruff: enable[E501]
 # fmt: on
 
 
@@ -302,9 +307,7 @@ def init_level_boards() -> dict[Level, Board]:
     """Initialize the level boards from the LEVEL_BOARD_TYPES dictionary."""
     level_boards: dict[Level, Board] = {}
     for level, types_board in LEVEL_BOARD_TYPES.items():
-        if len(types_board) == BoardConfig.ROW_SIZE and all(
-            len(row) == BoardConfig.COL_SIZE for row in types_board
-        ):
+        if len(types_board) == BoardConfig.ROW_SIZE and all(len(row) == BoardConfig.COL_SIZE for row in types_board):
             level_boards[level] = BoardUtils.from_types_board(types_board)
         else:
             raise ValueError(f"Invalid board configuration for level {level}")

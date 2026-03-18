@@ -24,7 +24,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 def generate_pieces(level: Level) -> list[PieceHand]:
-    """Generate list of lists with a total of 99 random pieces.
+    """
+    Generate list of lists with a total of 99 random pieces.
 
     Returns:
         list[PieceHand]: A list of lists containing the generated pieces:
@@ -32,10 +33,7 @@ def generate_pieces(level: Level) -> list[PieceHand]:
         - 333 pieces (divided in inner playable lists of 3) if level is infinite
 
     """
-    return [
-        [secrets.choice(PIECES) for _ in range(3)]
-        for _ in range(33 if level != Level.INFINITE else 333)
-    ]
+    return [[secrets.choice(PIECES) for _ in range(3)] for _ in range(33 if level != Level.INFINITE else 333)]
 
 
 def place_piece(
@@ -45,18 +43,21 @@ def place_piece(
     *,
     is_hint: bool = False,
 ) -> None:
-    """Places a piece on the BoardConfig.
+    """
+    Places a piece on the BoardConfig.
 
     Args:
         game_data (GameData): The game data.
         piece (list[Tuple[int, int]]): The piece to place.
         position (Tuple[int, int]): The position to place the piece.
-        is_hint (bool): If True, place the piece as a hint (not permanent and different value to indicate hint and differentiate color).
+        is_hint (bool): If True, place the piece as a hint (not permanent/hittable).
 
     Time Complexity:
         O(b), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces).
         - Even in the extreme case where a piece is the whole grid, it would be O(g^2) where g is the grid size).
-        - Still, the grid size is always small (8x8). It also wouldn't be able to be expanded much more than that, due to this project being about developing search algorithms and them being needed to run in a reasonable time.
+        - Still, the grid size is always small (8x8).
+            - It also wouldn't be able to be expanded much more than that,
+            due to this project being about developing search algorithms and them being needed to run in a reasonable time.
         - The time complexity of this function is O(1) in practice, since the number of blocks in the piece is very small.
 
     """
@@ -64,13 +65,12 @@ def place_piece(
 
     px, py = position
     for x, y in piece:
-        game_data.board[py + y][px + x] = (
-            Cell(CellType.PLAYER) if not is_hint else Cell(CellType.HINT)
-        )
+        game_data.board[py + y][px + x] = Cell(CellType.PLAYER) if not is_hint else Cell(CellType.HINT)
 
 
 def clear_full_lines(board: Board) -> tuple[int, int]:
-    """Clear full lines and columns from the BoardConfig.
+    """
+    Clear full lines and columns from the BoardConfig.
 
     Args:
         board (Board): The game BoardConfig.
@@ -85,14 +85,8 @@ def clear_full_lines(board: Board) -> tuple[int, int]:
     # Sets to avoid counting the same line/column/block multiple times
     # Prepare lines and columns to clear
     # Time Complexity: O(g^2) each
-    lines_to_clear = {
-        y for y in range(BoardConfig.ROW_SIZE) if all(cell.can_hit for cell in board[y])
-    }
-    columns_to_clear = {
-        x
-        for x in range(BoardConfig.COL_SIZE)
-        if all(board[y][x].can_hit for y in range(BoardConfig.ROW_SIZE))
-    }
+    lines_to_clear = {y for y in range(BoardConfig.ROW_SIZE) if all(cell.can_hit for cell in board[y])}
+    columns_to_clear = {x for x in range(BoardConfig.COL_SIZE) if all(board[y][x].can_hit for y in range(BoardConfig.ROW_SIZE))}
     cleared_blocks = set()
     target_blocks_cleared = 0
 
@@ -125,7 +119,8 @@ def is_valid_position(
     piece: Piece,
     position: PiecePosition,
 ) -> bool:
-    """Check if a piece can be placed on the board at the given position.
+    """
+    Check if a piece can be placed on the board at the given position.
 
     Args:
         board (Board): The game BoardConfig.
@@ -137,9 +132,11 @@ def is_valid_position(
 
     Time Complexity:
         O(b), where b is the number of blocks in the piece (very small, between 1 and 4 for the current available pieces.
-        Even in the extreme case where a piece is the whole grid, it would be O(g^2) where g is the grid size).
-        Still, the grid size is always small (8x8). It also wouldn't be able to be expanded much more than that, due to this project being about developing search algorithms and them being needed to run in a reasonable time.
-        The time complexity of this function is O(1) in practice, since the number of blocks in the piece is very small.
+        - Even in the extreme case where a piece is the whole grid, it would be O(g^2) where g is the grid size).
+        - Still, the grid size is always small (8x8).
+            - It also wouldn't be able to be expanded much more than that,
+            due to this project being about developing search algorithms and them being needed to run in a reasonable time.
+        - The time complexity of this function is O(1) in practice, since the number of blocks in the piece is very small.
 
     """
     px, py = position
@@ -152,7 +149,8 @@ def is_valid_position(
 
 
 def no_more_valid_moves(board: Board, pieces: PlayablePieceHand) -> bool:
-    """Check if there are no more valid moves for the player.
+    """
+    Check if there are no more valid moves for the player.
 
     Args:
         board (Board): The game BoardConfig.

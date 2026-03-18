@@ -16,7 +16,8 @@ from woodblock.game_logic.constants import (
 
 
 def draw_board(screen: pygame.Surface, board: Board) -> None:
-    """Draw the board.
+    """
+    Draw the board.
 
     Args:
         screen (pygame.Surface): The screen to draw on
@@ -74,7 +75,8 @@ def draw_piece(
     *,
     is_selected: bool = False,
 ) -> None:
-    """Draw a piece on the screen.
+    """
+    Draw a piece on the screen.
 
     Args:
         screen (pygame.Surface): The screen to draw on
@@ -107,7 +109,8 @@ def draw_piece(
 
 
 def draw_score(screen: pygame.Surface, score: int) -> None:
-    """Draw the score on the screen.
+    """
+    Draw the score on the screen.
 
     Args:
         screen (pygame.Surface): The screen to draw on
