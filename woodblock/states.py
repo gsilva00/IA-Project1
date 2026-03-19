@@ -1544,8 +1544,12 @@ class GameplayState(GameState):
                                 and py == self.ai_hint_position[1]
                             )
 
-                            if hinted_piece_placed:
-                                # Get the next hint
+                            # TODO: THIS HERE IS A GOOD IDEA FOR REFACTORING - support_hint_chaining attribute
+                            # AIAlgorithmRegistry.get_algorithm(self.ai_algorithm_id).supports_hint_chaining
+                            if hinted_piece_placed and self.ai_algorithm_id != AIAlgorithmID.SINGLE_DEPTH_GREEDY:
+                                # Get the next hint immediately (because the player followed the hint,
+                                # and the algorithm calculates until the end, so it already has the next move ready)
+                                # SINGLE_DEPTH_GREEDY does not calculate until the end
                                 self.ai_algorithm.get_next_move(
                                     game_data=self.game_data,
                                     res_callback_func=self._on_ai_algo_done,
